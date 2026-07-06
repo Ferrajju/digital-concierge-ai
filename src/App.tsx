@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import WelcomePage from './pages/huesped/WelcomePage'
 import AuthPage from './pages/propietario/AuthPage'
+import CrearPropiedadPage from './pages/propietario/CrearPropiedadPage'
 import DashboardPage from './pages/propietario/DashboardPage'
 import OnboardingPage from './pages/propietario/OnboardingPage'
 
@@ -11,6 +12,7 @@ function App() {
         <Route path="/" element={<DashboardPage />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
+        <Route path="/crear-propiedad/:propiedadId" element={<CrearPropiedadPage />} />
         <Route path="/welcome" element={<WelcomePage />} />
       </Routes>
     </BrowserRouter>
