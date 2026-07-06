@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import {
   enviarMensajeFlujo1,
   procesarConversacionFlujo2,
 } from '../../services/n8nService'
+import { inicializarNuevaPropiedad } from '../../services/propiedadService'
 import type { MensajeChat } from './types/propiedadChat'
 
 const MENSAJE_INICIAL_IA: MensajeChat = {
@@ -13,36 +14,51 @@ const MENSAJE_INICIAL_IA: MensajeChat = {
     '¡Perfecto! Vamos a configurar tu primer alojamiento. Háblame libremente de tu casa: ¿Cómo se llama el apartamento? ¿Cómo entran los huéspedes o dónde dejas las llaves? ¿Cuál es la clave del Wi-Fi o qué normas importantes de ruido tienes?',
 }
 
-const ESTADOS_PROCESAMIENTO = [
-  'Procesando toda la conversación...',
-  'Troceando bloques de conocimiento...',
-  'Guardando en Supabase con PgVector...',
-] as const
-
 export default function CrearPropiedadPage() {
   const navigate = useNavigate()
-  const { propiedadId } = useParams<{ propiedadId: string }>()
+  const [inicializando, setInicializando] = useState(true)
+  const [propiedadId, setPropiedadId] = useState<string | null>(null)
   const [mensajes, setMensajes] = useState<MensajeChat[]>([MENSAJE_INICIAL_IA])
   const [input, setInput] = useState('')
   const [escribiendo, setEscribiendo] = useState(false)
   const [error, setError] = useState('')
   const [procesando, setProcesando] = useState(false)
-  const [estadoProcesamiento, setEstadoProcesamiento] = useState(0)
   const mensajesEndRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    let activo = true
+
+    const inicializar = async () => {
+      try {
+        const nuevoPropiedadId = await inicializarNuevaPropiedad()
+        if (!activo) return
+        setPropiedadId(nuevoPropiedadId)
+      } catch (err) {
+        if (!activo) return
+        const mensaje =
+          err instanceof Error
+            ? err.message
+            : 'No se pudo inicializar la propiedad.'
+        setError(mensaje)
+
+        if (mensaje.includes('iniciar sesión')) {
+          navigate('/auth')
+        }
+      } finally {
+        if (activo) setInicializando(false)
+      }
+    }
+
+    inicializar()
+
+    return () => {
+      activo = false
+    }
+  }, [navigate])
 
   useEffect(() => {
     mensajesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [mensajes, escribiendo])
-
-  useEffect(() => {
-    if (!procesando) return
-
-    const interval = setInterval(() => {
-      setEstadoProcesamiento((prev) => (prev + 1) % ESTADOS_PROCESAMIENTO.length)
-    }, 2200)
-
-    return () => clearInterval(interval)
-  }, [procesando])
 
   const handleEnviar = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -86,13 +102,10 @@ export default function CrearPropiedadPage() {
     if (!propiedadId || procesando) return
 
     setProcesando(true)
-    setEstadoProcesamiento(0)
     setError('')
 
     try {
       await procesarConversacionFlujo2({ propiedad_id: propiedadId })
-      setMensajes([MENSAJE_INICIAL_IA])
-      setInput('')
       navigate('/')
     } catch (err) {
       const mensaje =
@@ -104,10 +117,34 @@ export default function CrearPropiedadPage() {
     }
   }
 
+  if (inicializando) {
+    return (
+      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 text-slate-100">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute -left-32 top-0 h-96 w-96 rounded-full bg-indigo-600/20 blur-3xl" />
+          <div className="absolute -right-32 bottom-0 h-96 w-96 rounded-full bg-violet-600/15 blur-3xl" />
+        </div>
+        <div className="relative z-10 mx-6 w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900/80 p-10 text-center backdrop-blur-sm">
+          <div className="mx-auto mb-6 h-14 w-14 animate-spin rounded-full border-[3px] border-indigo-500/20 border-t-indigo-400" />
+          <p className="text-lg font-semibold text-white">
+            Inicializando tu nuevo espacio de trabajo...
+          </p>
+          <p className="mt-2 text-sm text-slate-400">
+            Estamos preparando tu alojamiento en la base de datos.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   if (!propiedadId) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-slate-300">
-        <p>Falta el identificador de la propiedad en la URL.</p>
+        <div className="max-w-md rounded-2xl border border-rose-500/30 bg-rose-500/10 p-6 text-center">
+          <p className="text-sm text-rose-300">
+            {error || 'No se pudo crear la propiedad. Inténtalo de nuevo.'}
+          </p>
+        </div>
       </div>
     )
   }
@@ -129,7 +166,8 @@ export default function CrearPropiedadPage() {
               Asistente de Configuración Inicial
             </h1>
             <p className="mt-2 text-xs text-slate-500">
-              Propiedad: <span className="font-mono text-slate-400">{propiedadId}</span>
+              Propiedad:{' '}
+              <span className="font-mono text-slate-400">{propiedadId}</span>
             </p>
           </div>
           <button
@@ -154,7 +192,9 @@ export default function CrearPropiedadPage() {
               <div
                 key={mensaje.id}
                 className={`flex ${
-                  mensaje.remitente === 'propietario' ? 'justify-end' : 'justify-start'
+                  mensaje.remitente === 'propietario'
+                    ? 'justify-end'
+                    : 'justify-start'
                 }`}
               >
                 <div
@@ -177,7 +217,9 @@ export default function CrearPropiedadPage() {
             {escribiendo && (
               <div className="flex justify-start">
                 <div className="rounded-2xl bg-slate-800 px-4 py-3 ring-1 ring-slate-700">
-                  <p className="text-xs text-slate-400">La IA está escribiendo...</p>
+                  <p className="text-xs text-slate-400">
+                    La IA está respondiendo...
+                  </p>
                 </div>
               </div>
             )}
@@ -212,14 +254,11 @@ export default function CrearPropiedadPage() {
 
       {procesando && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md">
-          <div className="mx-6 w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900/90 p-8 text-center shadow-2xl">
+          <div className="mx-6 w-full max-w-lg rounded-2xl border border-slate-800 bg-slate-900/90 p-8 text-center shadow-2xl">
             <div className="mx-auto mb-6 h-14 w-14 animate-spin rounded-full border-[3px] border-indigo-500/20 border-t-indigo-400" />
-            <p className="text-lg font-semibold text-white">
-              {ESTADOS_PROCESAMIENTO[estadoProcesamiento]}
-            </p>
-            <p className="mt-2 text-sm text-slate-400">
-              No cierres esta ventana. Estamos preparando la base de conocimiento
-              de tu propiedad.
+            <p className="text-lg font-semibold leading-relaxed text-white">
+              Procesando toda la conversación y generando tus tarjetas
+              vectoriales... Por favor, no cierres esta ventana.
             </p>
           </div>
         </div>

@@ -12,7 +12,7 @@ function App() {
         <Route path="/" element={<DashboardPage />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
-        <Route path="/crear-propiedad/:propiedadId" element={<CrearPropiedadPage />} />
+        <Route path="/crear-propiedad" element={<CrearPropiedadPage />} />
         <Route path="/welcome" element={<WelcomePage />} />
       </Routes>
     </BrowserRouter>
