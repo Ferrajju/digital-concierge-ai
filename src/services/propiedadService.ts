@@ -101,3 +101,43 @@ export async function guardarBorradorPropiedad(
 
   if (error) throw error
 }
+
+export type AlertasPropiedadConfig = {
+  activas: boolean
+  canal: 'telegram' | 'email' | 'ambos'
+  contacto: string
+  eventos: {
+    emergencias: boolean
+    checkin_anticipado: boolean
+    averias: boolean
+  }
+}
+
+export async function guardarAlertasPropiedad(
+  propiedadId: string,
+  alertas: AlertasPropiedadConfig,
+): Promise<void> {
+  const { error } = await supabase
+    .from('propiedades')
+    .update({
+      permiso_modo_alerta: alertas.activas,
+      alertas_config: alertas,
+    })
+    .eq('id', propiedadId)
+
+  if (error) throw error
+}
+
+export async function obtenerTelegramPropietario(): Promise<string> {
+  const propietarioId = await obtenerPropietarioId()
+
+  const { data, error } = await supabase
+    .from('propietarios')
+    .select('telegram_chat_id')
+    .eq('id', propietarioId)
+    .single()
+
+  if (error) throw error
+  if (!data?.telegram_chat_id) return ''
+  return String(data.telegram_chat_id)
+}
