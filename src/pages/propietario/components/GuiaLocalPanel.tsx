@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useJsApiLoader } from '@react-google-maps/api'
 import { inyectarConocimientoFlujo3 } from '../../../services/n8nService'
 import { generarTarjetasGuiaLocal } from '../../../services/guiaLocalService'
 import { obtenerBorradorPropiedad } from '../../../services/propiedadService'
+import { useGoogleMaps } from '../../../providers/GoogleMapsProvider'
 import { formatConocimientoUnificado } from '../../../utils/formatConocimientoUnificado'
 import { formatGuiaLocalMarkdown } from '../../../utils/formatGuiaLocalMarkdown'
 import {
@@ -11,8 +11,6 @@ import {
   type CategoriaGuiaLocal,
   type TarjetaGuiaLocal,
 } from '../types/guiaLocal'
-
-const libraries: ('places' | 'geometry')[] = ['places', 'geometry']
 
 const inputClassName =
   'w-full rounded-xl border border-slate-700 bg-slate-950/80 px-4 py-3 text-sm text-white placeholder:text-slate-600 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50'
@@ -30,11 +28,7 @@ export default function GuiaLocalPanel({
   direccionCompleta,
   onCompleta,
 }: GuiaLocalPanelProps) {
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
-  const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: apiKey ?? '',
-    libraries,
-  })
+  const { isLoaded, loadError, apiKeyConfigured } = useGoogleMaps()
 
   const [tarjetas, setTarjetas] = useState<TarjetaGuiaLocal[]>([])
   const [cargando, setCargando] = useState(true)
@@ -87,20 +81,28 @@ export default function GuiaLocalPanel({
   }, [direccionCompleta, isLoaded])
 
   useEffect(() => {
-    if (!isLoaded || loadError) {
-      if (loadError) {
-        setCargando(false)
-        setError('No se pudo cargar Google Maps. Revisa tu API key.')
-      }
+    if (!apiKeyConfigured) {
+      setCargando(false)
+      setError(
+        'Google Maps no está configurado. Añade recomendaciones manualmente o configura VITE_GOOGLE_MAPS_API_KEY.',
+      )
       return
     }
+
+    if (loadError) {
+      setCargando(false)
+      setError('No se pudo cargar Google Maps. Añade recomendaciones manualmente.')
+      return
+    }
+
+    if (!isLoaded) return
 
     cargarTarjetas()
 
     return () => {
       abortRef.current?.abort()
     }
-  }, [cargarTarjetas, isLoaded, loadError])
+  }, [cargarTarjetas, isLoaded, loadError, apiKeyConfigured])
 
   const handleFinalizarYActivar = async () => {
     setGuardando(true)
@@ -152,6 +154,11 @@ export default function GuiaLocalPanel({
     }
   }
 
+  const mapsPendiente =
+    apiKeyConfigured && !isLoaded && !loadError
+  const mostrarCarga =
+    (cargando && apiKeyConfigured && isLoaded) || mapsPendiente
+
   const tarjetasPorCategoria = CATEGORIAS_GUIA.map((categoria) => ({
     ...categoria,
     tarjetas: tarjetas.filter((tarjeta) => tarjeta.categoria === categoria.id),
@@ -182,7 +189,7 @@ export default function GuiaLocalPanel({
         </div>
       )}
 
-      {cargando ? (
+      {mostrarCarga ? (
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-10 text-center backdrop-blur-sm">
           <div className="mx-auto mb-5 h-14 w-14 animate-spin rounded-full border-[3px] border-indigo-500/20 border-t-indigo-400" />
           <p className="text-lg font-semibold text-white">

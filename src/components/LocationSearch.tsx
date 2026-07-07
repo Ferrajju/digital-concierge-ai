@@ -1,9 +1,8 @@
 import { useCallback, useRef } from 'react'
-import { Autocomplete, useJsApiLoader } from '@react-google-maps/api'
+import { Autocomplete } from '@react-google-maps/api'
+import { useGoogleMaps } from '../providers/GoogleMapsProvider'
 import type { ParsedAddress } from '../utils/parseGooglePlace'
 import { parseGooglePlace } from '../utils/parseGooglePlace'
-
-const libraries: ('places')[] = ['places']
 
 type LocationSearchProps = {
   value: string
@@ -19,12 +18,7 @@ export default function LocationSearch({
   disabled = false,
 }: LocationSearchProps) {
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null)
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
-
-  const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: apiKey ?? '',
-    libraries,
-  })
+  const { isLoaded, loadError, apiKeyConfigured } = useGoogleMaps()
 
   const onLoad = useCallback((autocomplete: google.maps.places.Autocomplete) => {
     autocompleteRef.current = autocomplete
@@ -44,7 +38,7 @@ export default function LocationSearch({
   const inputClassName =
     'w-full rounded-xl border border-slate-700 bg-slate-950/80 px-4 py-3.5 text-white placeholder:text-slate-600 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50'
 
-  if (!apiKey) {
+  if (!apiKeyConfigured) {
     return (
       <input
         type="text"
