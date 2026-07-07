@@ -1,8 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import {
-  inyectarConocimientoFlujo3,
-  procesarBorradorFlujo2,
-} from '../../../services/n8nService'
+import { procesarBorradorFlujo2 } from '../../../services/n8nService'
 import { guardarBorradorPropiedad } from '../../../services/propiedadService'
 import { WIZARD_INICIAL, type WizardValidacionState } from '../types/validacionWizard'
 
@@ -11,7 +8,7 @@ type PasoWizard = 1 | 2
 type ValidacionWizardProps = {
   propiedadId: string
   nombreVivienda: string
-  onIndexacionCompleta: () => void
+  onBorradorGuardado: () => void
 }
 
 const PASOS = [
@@ -32,13 +29,13 @@ const inputClassName =
 export default function ValidacionWizard({
   propiedadId,
   nombreVivienda,
-  onIndexacionCompleta,
+  onBorradorGuardado,
 }: ValidacionWizardProps) {
   const [paso, setPaso] = useState<PasoWizard>(1)
   const [wizard, setWizard] = useState<WizardValidacionState>(WIZARD_INICIAL)
   const [isLoading, setIsLoading] = useState(true)
   const [etapaProcesado, setEtapaProcesado] = useState(0)
-  const [indexando, setIndexando] = useState(false)
+  const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
   const abortRef = useRef<AbortController | null>(null)
 
@@ -109,42 +106,24 @@ export default function ValidacionWizard({
     })
   }
 
-  const handleConfirmarBorrador = async () => {
+  const handleSiguienteBorrador = async () => {
     const textoFinal = wizard.borradorEditado.trim()
-    if (!textoFinal || indexando) return
+    if (!textoFinal || guardando) return
 
-    setIndexando(true)
+    setGuardando(true)
     setError('')
-
-    abortRef.current?.abort()
-    const controller = new AbortController()
-    abortRef.current = controller
 
     try {
       await guardarBorradorPropiedad(propiedadId, textoFinal)
-
-      await inyectarConocimientoFlujo3(
-        {
-          propiedad_id: propiedadId,
-          borrador: textoFinal,
-        },
-        controller.signal,
-      )
-
-      onIndexacionCompleta()
+      onBorradorGuardado()
     } catch (err) {
-      if (err instanceof Error && err.name === 'AbortError') return
-
-      const mensaje =
-        err instanceof TypeError && err.message === 'Failed to fetch'
-          ? 'No se pudo conectar con n8n (Flujo 3). Comprueba que el webhook processinfo acepte POST.'
-          : err instanceof Error
-            ? err.message
-            : 'No se pudo guardar el borrador o indexar el conocimiento.'
-
-      setError(mensaje)
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'No se pudo guardar el borrador.',
+      )
     } finally {
-      setIndexando(false)
+      setGuardando(false)
     }
   }
 
@@ -158,8 +137,8 @@ export default function ValidacionWizard({
           {nombreVivienda}
         </h1>
         <p className="mt-2 text-sm text-slate-400">
-          Revisa el borrador generado. Al confirmar, indexaremos todo el
-          conocimiento con IA.
+          Revisa el borrador del manual. Lo indexaremos junto con la Guía Local
+          al final del proceso.
         </p>
       </div>
 
@@ -206,8 +185,8 @@ export default function ValidacionWizard({
                 Borrador editable
               </h2>
               <p className="mt-1 text-sm text-slate-400">
-                Corrige cualquier dato antes de indexar (Wi-Fi, normas,
-                accesos...).
+                Corrige cualquier dato del manual (Wi-Fi, normas, accesos...)
+                antes de continuar.
               </p>
             </div>
             <textarea
@@ -219,18 +198,18 @@ export default function ValidacionWizard({
                 }))
               }
               rows={16}
-              disabled={indexando}
+              disabled={guardando}
               className={`resize-y font-mono text-[13px] leading-relaxed ${inputClassName}`}
               placeholder="El borrador estructurado aparecerá aquí..."
             />
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={handleConfirmarBorrador}
-                disabled={!wizard.borradorEditado.trim() || indexando}
+                onClick={handleSiguienteBorrador}
+                disabled={!wizard.borradorEditado.trim() || guardando}
                 className="rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all hover:from-indigo-400 hover:to-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                Confirmar e indexar con IA
+                {guardando ? 'Guardando...' : 'Siguiente → Guía Local'}
               </button>
             </div>
           </div>
@@ -304,20 +283,6 @@ export default function ValidacionWizard({
                 </>
               )}
             </div>
-          </div>
-        </div>
-      )}
-
-      {indexando && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md">
-          <div className="mx-6 w-full max-w-lg rounded-2xl border border-slate-800 bg-slate-900/90 p-8 text-center shadow-2xl">
-            <div className="mx-auto mb-6 h-14 w-14 animate-spin rounded-full border-[3px] border-indigo-500/20 border-t-indigo-400" />
-            <p className="text-lg font-semibold leading-relaxed text-white">
-              Indexando el conocimiento con IA...
-            </p>
-            <p className="mt-2 text-sm text-slate-400">
-              Troceando el borrador y generando embeddings.
-            </p>
           </div>
         </div>
       )}

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useJsApiLoader } from '@react-google-maps/api'
 import { inyectarConocimientoFlujo3 } from '../../../services/n8nService'
 import { generarTarjetasGuiaLocal } from '../../../services/guiaLocalService'
+import { obtenerBorradorPropiedad } from '../../../services/propiedadService'
+import { formatConocimientoUnificado } from '../../../utils/formatConocimientoUnificado'
 import { formatGuiaLocalMarkdown } from '../../../utils/formatGuiaLocalMarkdown'
 import {
   CATEGORIAS_GUIA,
@@ -100,17 +102,7 @@ export default function GuiaLocalPanel({
     }
   }, [cargarTarjetas, isLoaded, loadError])
 
-  const handleGuardarYActivar = async () => {
-    const tarjetasActivas = tarjetas.filter((tarjeta) => tarjeta.activa)
-    const markdown = formatGuiaLocalMarkdown(tarjetasActivas)
-
-    if (!markdown.trim()) {
-      setError(
-        'Activa al menos una tarjeta con nombre, distancia e información completos.',
-      )
-      return
-    }
-
+  const handleFinalizarYActivar = async () => {
     setGuardando(true)
     setError('')
 
@@ -119,10 +111,27 @@ export default function GuiaLocalPanel({
     abortRef.current = controller
 
     try {
+      const manual = await obtenerBorradorPropiedad(propiedadId)
+      if (!manual.trim()) {
+        setError(
+          'No se encontró el manual del alojamiento. Vuelve al paso anterior y guárdalo.',
+        )
+        return
+      }
+
+      const tarjetasActivas = tarjetas.filter((tarjeta) => tarjeta.activa)
+      const guiaMarkdown = formatGuiaLocalMarkdown(tarjetasActivas)
+      const borradorUnificado = formatConocimientoUnificado(manual, guiaMarkdown)
+
+      if (!borradorUnificado.trim()) {
+        setError('No hay contenido para indexar.')
+        return
+      }
+
       await inyectarConocimientoFlujo3(
         {
           propiedad_id: propiedadId,
-          borrador: markdown,
+          borrador: borradorUnificado,
         },
         controller.signal,
       )
@@ -135,7 +144,7 @@ export default function GuiaLocalPanel({
           ? 'No se pudo conectar con n8n (Flujo 3). Comprueba que el webhook processinfo acepte POST.'
           : err instanceof Error
             ? err.message
-            : 'No se pudo indexar la Guía Local.'
+            : 'No se pudo indexar el conocimiento unificado.'
 
       setError(mensaje)
     } finally {
@@ -159,8 +168,8 @@ export default function GuiaLocalPanel({
         </h1>
         <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-slate-400">
           Hemos buscado supermercados, farmacias y restaurantes cerca de tu
-          alojamiento. Revisa, edita o añade lo que quieras antes de activar la
-          guía.
+          alojamiento. Revisa, edita o añade recomendaciones. Al finalizar,
+          indexaremos el manual y la guía juntos en una sola operación.
         </p>
         <p className="mx-auto mt-2 max-w-xl text-xs text-slate-500">
           📍 {direccionCompleta}
@@ -333,11 +342,13 @@ export default function GuiaLocalPanel({
             </button>
             <button
               type="button"
-              onClick={handleGuardarYActivar}
-              disabled={guardando || tarjetas.length === 0}
+              onClick={handleFinalizarYActivar}
+              disabled={guardando}
               className="rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition-all hover:from-indigo-400 hover:to-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {guardando ? 'Indexando guía...' : 'Guardar y Activar Guía'}
+              {guardando
+                ? 'Indexando conocimiento...'
+                : 'Finalizar y Activar Conserje'}
             </button>
           </div>
         </div>
@@ -348,10 +359,10 @@ export default function GuiaLocalPanel({
           <div className="mx-6 w-full max-w-lg rounded-2xl border border-slate-800 bg-slate-900/90 p-8 text-center shadow-2xl">
             <div className="mx-auto mb-6 h-14 w-14 animate-spin rounded-full border-[3px] border-indigo-500/20 border-t-indigo-400" />
             <p className="text-lg font-semibold leading-relaxed text-white">
-              Indexando la Guía Local con IA...
+              Indexando Manual + Guía Local...
             </p>
             <p className="mt-2 text-sm text-slate-400">
-              Se añadirán nuevos vectores sin borrar el manual anterior.
+              n8n borrará los vectores antiguos e indexará el bloque unificado.
             </p>
           </div>
         </div>

@@ -100,8 +100,8 @@ export default function AlertasConfigPanel({
           Alertas para {nombreVivienda}
         </h1>
         <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-slate-400">
-          El manual y la guía local ya están indexados. Elige qué eventos críticos
-          quieres que el bot te notifique directamente al teléfono.
+          El conocimiento del alojamiento ya está indexado. Elige qué eventos
+          críticos quieres que el bot te notifique directamente al teléfono.
         </p>
       </div>
 

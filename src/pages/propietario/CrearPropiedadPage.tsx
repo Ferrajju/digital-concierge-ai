@@ -177,7 +177,7 @@ export default function CrearPropiedadPage() {
         <ValidacionWizard
           propiedadId={propiedadId}
           nombreVivienda={form.nombreVivienda}
-          onIndexacionCompleta={() => setFase('guiaLocal')}
+          onBorradorGuardado={() => setFase('guiaLocal')}
         />
       )}
 
