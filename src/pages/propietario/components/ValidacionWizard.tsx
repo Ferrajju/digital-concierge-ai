@@ -133,18 +133,7 @@ export default function ValidacionWizard({
       await inyectarConocimientoFlujo3(
         {
           propiedad_id: propiedadId,
-          borrador_editado: textoFinal,
-          alertas: {
-            activas: wizard.alertas.activas,
-            canal: wizard.alertas.canal,
-            contacto: wizard.alertas.contacto,
-          },
-          recomendaciones: {
-            activo: wizard.recomendaciones.activo,
-            restaurantes: wizard.recomendaciones.restaurantes,
-            transporte: wizard.recomendaciones.transporte,
-            lugares_interes: wizard.recomendaciones.lugaresInteres,
-          },
+          borrador: textoFinal,
         },
         controller.signal,
       )

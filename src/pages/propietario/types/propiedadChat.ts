@@ -26,16 +26,5 @@ export type N8nFlujo2Payload = {
 
 export type N8nFlujo3Payload = {
   propiedad_id: string
-  borrador_editado: string
-  alertas: {
-    activas: boolean
-    canal: 'telegram' | 'email' | 'ambos'
-    contacto: string
-  }
-  recomendaciones: {
-    activo: boolean
-    restaurantes: string
-    transporte: string
-    lugares_interes: string
-  }
+  borrador: string
 }
