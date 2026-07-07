@@ -15,32 +15,59 @@ export async function obtenerPropietarioId(): Promise<string> {
 
 export type CrearPropiedadParams = {
   nombreApartamento: string
-  ubicacionBase: string
+  nombreIa: string
+  ciudadRegion: string
+  direccionCalle: string
+  pisoPuerta: string
+  codigoPostal: string
+  indicacionesAcceso: string
 }
 
-export async function crearPropiedadConDatos({
-  nombreApartamento,
-  ubicacionBase,
-}: CrearPropiedadParams): Promise<string> {
-  const propietarioId = await obtenerPropietarioId()
+async function obtenerOCrearZona(
+  propietarioId: string,
+  ciudadRegion: string,
+): Promise<string> {
+  const { data: zonas, error: selectError } = await supabase
+    .from('zonas')
+    .select('id')
+    .eq('propietario_id', propietarioId)
+    .limit(1)
 
-  const { data: zona, error: zonaError } = await supabase
+  if (selectError) throw selectError
+  if (zonas && zonas.length > 0) return zonas[0].id
+
+  const ubicacion = ciudadRegion.trim() || 'Por definir'
+
+  const { data: zona, error: insertError } = await supabase
     .from('zonas')
     .insert({
       propietario_id: propietarioId,
-      nombre_zona: 'General',
-      ubicacion_base: ubicacionBase,
+      nombre_zona: ubicacion,
+      ubicacion_base: ubicacion,
     })
     .select('id')
     .single()
 
-  if (zonaError) throw zonaError
+  if (insertError) throw insertError
+  return zona.id
+}
+
+export async function crearPropiedadConDatos(
+  params: CrearPropiedadParams,
+): Promise<string> {
+  const propietarioId = await obtenerPropietarioId()
+  const zonaId = await obtenerOCrearZona(propietarioId, params.ciudadRegion)
 
   const { data: propiedad, error: propiedadError } = await supabase
     .from('propiedades')
     .insert({
-      zona_id: zona.id,
-      nombre_apartamento: nombreApartamento,
+      zona_id: zonaId,
+      nombre_apartamento: params.nombreApartamento,
+      ia_identidad: params.nombreIa,
+      direccion_calle: params.direccionCalle,
+      piso_puerta: params.pisoPuerta || null,
+      codigo_postal: params.codigoPostal,
+      indicaciones_acceso: params.indicacionesAcceso || null,
       borrador_texto: '',
     })
     .select('id')

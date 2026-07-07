@@ -1,12 +1,14 @@
 import { useCallback, useRef } from 'react'
 import { Autocomplete, useJsApiLoader } from '@react-google-maps/api'
+import type { ParsedAddress } from '../utils/parseGooglePlace'
+import { parseGooglePlace } from '../utils/parseGooglePlace'
 
 const libraries: ('places')[] = ['places']
 
 type LocationSearchProps = {
   value: string
   onChange: (value: string) => void
-  onPlaceSelect: (address: string) => void
+  onPlaceSelect: (parsed: ParsedAddress) => void
   disabled?: boolean
 }
 
@@ -30,11 +32,12 @@ export default function LocationSearch({
 
   const onPlaceChanged = useCallback(() => {
     const place = autocompleteRef.current?.getPlace()
-    const address = place?.formatted_address ?? place?.name ?? ''
+    if (!place) return
 
-    if (address) {
-      onChange(address)
-      onPlaceSelect(address)
+    const parsed = parseGooglePlace(place)
+    if (parsed.busquedaRapida) {
+      onChange(parsed.busquedaRapida)
+      onPlaceSelect(parsed)
     }
   }, [onChange, onPlaceSelect])
 
@@ -47,7 +50,7 @@ export default function LocationSearch({
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Introduce la dirección manualmente"
+        placeholder="Buscador rápido — escribe una dirección"
         disabled={disabled}
         className={inputClassName}
       />
@@ -60,7 +63,7 @@ export default function LocationSearch({
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Busca o escribe la dirección de tu alojamiento"
+        placeholder="Buscador rápido — escribe una dirección"
         disabled={disabled}
         className={inputClassName}
       />
@@ -80,13 +83,15 @@ export default function LocationSearch({
     <Autocomplete
       onLoad={onLoad}
       onPlaceChanged={onPlaceChanged}
-      options={{ fields: ['formatted_address', 'name', 'geometry'] }}
+      options={{
+        fields: ['formatted_address', 'name', 'geometry', 'address_components'],
+      }}
     >
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Busca la ubicación exacta de tu alojamiento"
+        placeholder="Buscador rápido — escribe y selecciona tu dirección"
         disabled={disabled}
         className={inputClassName}
       />
