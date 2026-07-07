@@ -23,6 +23,13 @@ const PASOS = [
   { numero: 4, label: 'Guía local' },
 ] as const
 
+const ETAPAS_PROCESADO = [
+  'Leyendo toda tu conversación...',
+  'Extrayendo datos clave del alojamiento...',
+  'Organizando bloques: Wi-Fi, acceso, normas...',
+  'Generando tu borrador estructurado...',
+] as const
+
 const inputClassName =
   'w-full rounded-xl border border-slate-700 bg-slate-950/80 px-4 py-3.5 text-sm text-white placeholder:text-slate-600 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50'
 
@@ -34,6 +41,7 @@ export default function ValidacionWizard({
   const [paso, setPaso] = useState<PasoWizard>(1)
   const [wizard, setWizard] = useState<WizardValidacionState>(WIZARD_INICIAL)
   const [procesandoBatch, setProcesandoBatch] = useState(true)
+  const [etapaProcesado, setEtapaProcesado] = useState(0)
   const [inyectando, setInyectando] = useState(false)
   const [error, setError] = useState('')
   const abortRef = useRef<AbortController | null>(null)
@@ -67,6 +75,16 @@ export default function ValidacionWizard({
       controller.abort()
     }
   }, [propiedadId])
+
+  useEffect(() => {
+    if (!procesandoBatch || paso !== 1) return
+
+    const interval = setInterval(() => {
+      setEtapaProcesado((prev) => (prev + 1) % ETAPAS_PROCESADO.length)
+    }, 2200)
+
+    return () => clearInterval(interval)
+  }, [procesandoBatch, paso])
 
   const updateWizard = (updates: Partial<WizardValidacionState>) => {
     setWizard((prev) => ({ ...prev, ...updates }))
@@ -168,7 +186,7 @@ export default function ValidacionWizard({
         })}
       </div>
 
-      {error && (
+      {error && paso !== 1 && (
         <div className="mb-6 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
           {error}
         </div>
@@ -176,33 +194,10 @@ export default function ValidacionWizard({
 
       <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm sm:p-8">
         {paso === 1 && (
-          <div className="text-center">
-            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20 text-3xl ring-1 ring-emerald-500/40">
-              ✓
-            </div>
-            <h2 className="text-xl font-semibold text-white sm:text-2xl">
-              ¡Gracias por los datos!
-            </h2>
-            <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-slate-400">
-              Vamos a repasar y estructurar toda la información específica de
-              tu alojamiento.
+          <div className="py-12 text-center">
+            <p className="text-sm text-slate-500">
+              Estamos preparando tu borrador en segundo plano...
             </p>
-            {procesandoBatch ? (
-              <div className="mt-8 flex flex-col items-center gap-3">
-                <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-indigo-500/20 border-t-indigo-400" />
-                <p className="text-sm text-slate-500">
-                  Procesando la conversación en batch...
-                </p>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setPaso(2)}
-                className="mt-8 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all hover:from-indigo-400 hover:to-violet-500"
-              >
-                Siguiente
-              </button>
-            )}
           </div>
         )}
 
@@ -445,6 +440,125 @@ export default function ValidacionWizard({
           </div>
         )}
       </div>
+
+      {paso === 1 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 backdrop-blur-md">
+          <div className="relative mx-6 w-full max-w-xl overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/95 p-8 shadow-2xl sm:p-10">
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+              <div className="absolute -left-20 -top-20 h-56 w-56 rounded-full bg-indigo-600/20 blur-3xl" />
+              <div className="absolute -bottom-20 -right-20 h-56 w-56 rounded-full bg-violet-600/15 blur-3xl" />
+            </div>
+
+            <div className="relative text-center">
+              {procesandoBatch ? (
+                <>
+                  <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-indigo-500/15 ring-1 ring-indigo-500/30">
+                    <div className="h-12 w-12 animate-spin rounded-full border-[3px] border-indigo-500/20 border-t-indigo-400" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-white sm:text-2xl">
+                    ¡Gracias por los datos!
+                  </h2>
+                  <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-slate-400">
+                    Estamos procesando y estructurando toda la información de tu
+                    alojamiento. Esto puede tardar unos segundos.
+                  </p>
+
+                  <div className="relative mx-auto mt-8 h-1.5 max-w-xs overflow-hidden rounded-full bg-slate-800">
+                    <div className="absolute inset-y-0 w-1/2 animate-shimmer rounded-full bg-gradient-to-r from-transparent via-indigo-400/80 to-transparent" />
+                  </div>
+
+                  <p
+                    key={etapaProcesado}
+                    className="mt-6 animate-fade-in-up text-sm font-medium text-indigo-300"
+                  >
+                    {ETAPAS_PROCESADO[etapaProcesado]}
+                  </p>
+
+                  <div className="mt-6 flex justify-center gap-1.5">
+                    {ETAPAS_PROCESADO.map((_, index) => (
+                      <span
+                        key={index}
+                        className={`h-1.5 rounded-full transition-all duration-500 ${
+                          index === etapaProcesado
+                            ? 'w-6 bg-indigo-400'
+                            : 'w-1.5 bg-slate-700'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </>
+              ) : error ? (
+                <>
+                  <div className="mx-auto mb-6 flex h-20 w-20 animate-scale-in items-center justify-center rounded-full bg-rose-500/15 text-3xl ring-1 ring-rose-500/40">
+                    !
+                  </div>
+                  <h2 className="text-xl font-semibold text-white">
+                    No se pudo procesar
+                  </h2>
+                  <p className="mx-auto mt-3 max-w-md text-sm text-slate-400">
+                    {error}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setError('')
+                      setProcesandoBatch(true)
+                      setEtapaProcesado(0)
+                      abortRef.current?.abort()
+                      const controller = new AbortController()
+                      abortRef.current = controller
+                      procesarBorradorFlujo2(
+                        { propiedad_id: propiedadId },
+                        controller.signal,
+                      )
+                        .then((borrador) => {
+                          setWizard((prev) => ({
+                            ...prev,
+                            borradorEditado: borrador,
+                          }))
+                          setProcesandoBatch(false)
+                        })
+                        .catch((err) => {
+                          if (err instanceof Error && err.name === 'AbortError')
+                            return
+                          setError(
+                            err instanceof Error
+                              ? err.message
+                              : 'No se pudo procesar la conversación.',
+                          )
+                          setProcesandoBatch(false)
+                        })
+                    }}
+                    className="mt-8 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-8 py-3.5 text-sm font-semibold text-white"
+                  >
+                    Reintentar procesamiento
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="mx-auto mb-6 flex h-20 w-20 animate-scale-in items-center justify-center rounded-full bg-emerald-500/20 text-4xl ring-1 ring-emerald-500/40">
+                    ✓
+                  </div>
+                  <h2 className="text-xl font-semibold text-white sm:text-2xl">
+                    ¡Borrador listo!
+                  </h2>
+                  <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-slate-400">
+                    Hemos organizado toda tu información. Ahora puedes revisarla
+                    y corregir cualquier detalle antes de continuar.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setPaso(2)}
+                    className="mt-8 animate-pulse-soft rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-8 py-4 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition-all hover:from-indigo-400 hover:to-violet-500"
+                  >
+                    Revisar borrador →
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {inyectando && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md">
