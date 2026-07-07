@@ -9,17 +9,6 @@ const FLUJO1_URL = import.meta.env.VITE_N8N_FLUJO1_WEBHOOK_URL
 const FLUJO2_URL = import.meta.env.VITE_N8N_FLUJO2_WEBHOOK_URL
 const FLUJO3_URL = import.meta.env.VITE_N8N_FLUJO3_WEBHOOK_URL
 
-const FRASES_CIERRE = [
-  'entrevista completada',
-  'hemos terminado',
-  'toda la información necesaria',
-  'ya tengo todo lo que necesito',
-  'información está completa',
-  'configuración inicial está lista',
-  'repasaremos toda la información',
-  'vamos a repasar',
-]
-
 function assertWebhookUrl(url: string | undefined, flujo: string): asserts url is string {
   const placeholders = ['TU_URL_WEBHOOK_N8N_AQUI', 'TU_URL_WEBHOOK_N8N_BATCH_AQUI', 'TU_URL_WEBHOOK_N8N_EMBEDDINGS_AQUI']
   if (!url || placeholders.includes(url)) {
@@ -87,20 +76,29 @@ function extractBorrador(data: unknown): string {
   return extractTextFromRecord(record)
 }
 
-function esFraseDeCierre(texto: string): boolean {
-  const normalizado = texto.toLowerCase()
-  return FRASES_CIERRE.some((frase) => normalizado.includes(frase))
+function parseBooleanStrict(value: unknown): boolean {
+  if (typeof value === 'boolean') return value
+  if (value === 'true') return true
+  if (value === 'false') return false
+  throw new Error(
+    'La respuesta de n8n no incluye el campo booleano "finalizado".',
+  )
 }
 
 function parseFlujo1Response(data: unknown): N8nFlujo1Response {
   const record = unwrapRecord(data)
-  const respuesta = extractTextFromRecord(record)
-  const finalizado =
-    record.finalizado === true ||
-    record.finalizado === 'true' ||
-    esFraseDeCierre(respuesta)
 
-  return { respuesta, finalizado }
+  const respuesta = record.respuesta
+  if (typeof respuesta !== 'string' || !respuesta.trim()) {
+    throw new Error(
+      'La respuesta de n8n no incluye el campo "respuesta" válido.',
+    )
+  }
+
+  return {
+    respuesta: respuesta.trim(),
+    finalizado: parseBooleanStrict(record.finalizado),
+  }
 }
 
 async function parseResponseJson(response: Response): Promise<unknown> {

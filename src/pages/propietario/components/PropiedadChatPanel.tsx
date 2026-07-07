@@ -7,6 +7,8 @@ import {
 import { enviarMensajeFlujo1 } from '../../../services/n8nService'
 import type { MensajeChat } from '../types/propiedadChat'
 
+const DELAY_CIERRE_MS = 1500
+
 const MENSAJE_INICIAL_IA: MensajeChat = {
   id: 'inicial',
   remitente: 'ia',
@@ -28,11 +30,16 @@ export default function PropiedadChatPanel({
   const [mensajes, setMensajes] = useState<MensajeChat[]>([MENSAJE_INICIAL_IA])
   const [input, setInput] = useState('')
   const [escribiendo, setEscribiendo] = useState(false)
+  const [entrevistaFinalizada, setEntrevistaFinalizada] = useState(false)
   const [cargandoHistorial, setCargandoHistorial] = useState(true)
   const [error, setError] = useState('')
   const mensajesEndRef = useRef<HTMLDivElement>(null)
   const chatContainerRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const cierreTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const chatBloqueado = escribiendo || entrevistaFinalizada
 
   useEffect(() => {
     let activo = true
@@ -61,6 +68,7 @@ export default function PropiedadChatPanel({
     return () => {
       activo = false
       abortRef.current?.abort()
+      if (cierreTimeoutRef.current) clearTimeout(cierreTimeoutRef.current)
     }
   }, [propiedadId])
 
@@ -72,10 +80,24 @@ export default function PropiedadChatPanel({
     mensajesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [mensajes, escribiendo])
 
+  const evaluarCierreEntrevista = (finalizado: boolean) => {
+    if (finalizado) {
+      setEntrevistaFinalizada(true)
+      cierreTimeoutRef.current = setTimeout(() => {
+        onEntrevistaCompletada()
+      }, DELAY_CIERRE_MS)
+      return
+    }
+
+    requestAnimationFrame(() => {
+      inputRef.current?.focus()
+    })
+  }
+
   const handleEnviar = async (e: React.FormEvent) => {
     e.preventDefault()
     const texto = input.trim()
-    if (!texto || escribiendo) return
+    if (!texto || chatBloqueado) return
 
     const historial = buildHistorial(mensajes)
 
@@ -105,7 +127,7 @@ export default function PropiedadChatPanel({
         prev.map((m) => (m.id === mensajeOptimista.id ? mensajeGuardado : m)),
       )
 
-      const { respuesta, finalizado } = await enviarMensajeFlujo1(
+      const data = await enviarMensajeFlujo1(
         {
           propiedad_id: propiedadId,
           mensaje: texto,
@@ -114,17 +136,27 @@ export default function PropiedadChatPanel({
         controller.signal,
       )
 
-      const mensajeIa = await guardarMensajeConversacion(
+      const mensajeIaOptimista: MensajeChat = {
+        id: crypto.randomUUID(),
+        remitente: 'ia',
+        texto: data.respuesta,
+      }
+
+      setMensajes((prev) => [...prev, mensajeIaOptimista])
+      setEscribiendo(false)
+      evaluarCierreEntrevista(data.finalizado)
+
+      const mensajeIaGuardado = await guardarMensajeConversacion(
         propiedadId,
         'ia',
-        respuesta,
+        data.respuesta,
       )
 
-      setMensajes((prev) => [...prev, mensajeIa])
-
-      if (finalizado) {
-        setTimeout(() => onEntrevistaCompletada(), 1200)
-      }
+      setMensajes((prev) =>
+        prev.map((m) =>
+          m.id === mensajeIaOptimista.id ? mensajeIaGuardado : m,
+        ),
+      )
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return
 
@@ -132,7 +164,6 @@ export default function PropiedadChatPanel({
       setError(
         err instanceof Error ? err.message : 'No se pudo contactar con n8n.',
       )
-    } finally {
       setEscribiendo(false)
     }
   }
@@ -219,16 +250,21 @@ export default function PropiedadChatPanel({
         >
           <div className="flex flex-col gap-3 sm:flex-row">
             <input
+              ref={inputRef}
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Describe tu alojamiento libremente..."
-              disabled={escribiendo}
+              placeholder={
+                entrevistaFinalizada
+                  ? 'Entrevista completada. Preparando revisión...'
+                  : 'Describe tu alojamiento libremente...'
+              }
+              disabled={chatBloqueado}
               className="flex-1 rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-white placeholder:text-slate-600 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50"
             />
             <button
               type="submit"
-              disabled={!input.trim() || escribiendo}
+              disabled={!input.trim() || chatBloqueado}
               className="shrink-0 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all duration-300 hover:from-indigo-400 hover:to-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
             >
               Enviar información
