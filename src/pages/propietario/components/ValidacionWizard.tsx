@@ -1,33 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import {
   inyectarConocimientoFlujo3,
   procesarBorradorFlujo2,
 } from '../../../services/n8nService'
-import {
-  guardarAlertasPropiedad,
-  guardarBorradorPropiedad,
-  obtenerTelegramPropietario,
-} from '../../../services/propiedadService'
-import {
-  EVENTOS_ALERTA,
-  WIZARD_INICIAL,
-  type ConfigAlertas,
-  type TipoEventoAlerta,
-  type WizardValidacionState,
-} from '../types/validacionWizard'
+import { guardarBorradorPropiedad } from '../../../services/propiedadService'
+import { WIZARD_INICIAL, type WizardValidacionState } from '../types/validacionWizard'
 
-type PasoWizard = 1 | 2 | 3
+type PasoWizard = 1 | 2
 
 type ValidacionWizardProps = {
   propiedadId: string
   nombreVivienda: string
+  onIndexacionCompleta: () => void
 }
 
 const PASOS = [
   { numero: 1, label: 'Procesado' },
   { numero: 2, label: 'Borrador' },
-  { numero: 3, label: 'Alertas' },
 ] as const
 
 const ETAPAS_PROCESADO = [
@@ -43,13 +32,13 @@ const inputClassName =
 export default function ValidacionWizard({
   propiedadId,
   nombreVivienda,
+  onIndexacionCompleta,
 }: ValidacionWizardProps) {
-  const navigate = useNavigate()
   const [paso, setPaso] = useState<PasoWizard>(1)
   const [wizard, setWizard] = useState<WizardValidacionState>(WIZARD_INICIAL)
   const [isLoading, setIsLoading] = useState(true)
   const [etapaProcesado, setEtapaProcesado] = useState(0)
-  const [inyectando, setInyectando] = useState(false)
+  const [indexando, setIndexando] = useState(false)
   const [error, setError] = useState('')
   const abortRef = useRef<AbortController | null>(null)
 
@@ -99,44 +88,6 @@ export default function ValidacionWizard({
     return () => clearInterval(interval)
   }, [isLoading, paso])
 
-  useEffect(() => {
-    if (paso !== 3 || wizard.alertas.contacto) return
-
-    obtenerTelegramPropietario()
-      .then((telegram) => {
-        if (!telegram) return
-        setWizard((prev) => ({
-          ...prev,
-          alertas: { ...prev.alertas, contacto: telegram },
-        }))
-      })
-      .catch(() => {})
-  }, [paso, wizard.alertas.contacto])
-
-  const updateWizard = (updates: Partial<WizardValidacionState>) => {
-    setWizard((prev) => ({ ...prev, ...updates }))
-  }
-
-  const updateAlertas = (updates: Partial<ConfigAlertas>) => {
-    setWizard((prev) => ({
-      ...prev,
-      alertas: { ...prev.alertas, ...updates },
-    }))
-  }
-
-  const toggleEvento = (evento: TipoEventoAlerta) => {
-    setWizard((prev) => ({
-      ...prev,
-      alertas: {
-        ...prev.alertas,
-        eventos: {
-          ...prev.alertas.eventos,
-          [evento]: !prev.alertas.eventos[evento],
-        },
-      },
-    }))
-  }
-
   const handleReintentar = () => {
     setError('')
     setIsLoading(true)
@@ -158,50 +109,11 @@ export default function ValidacionWizard({
     })
   }
 
-  const handleSiguienteBorrador = async () => {
+  const handleConfirmarBorrador = async () => {
     const textoFinal = wizard.borradorEditado.trim()
-    if (!textoFinal || inyectando) return
+    if (!textoFinal || indexando) return
 
-    setInyectando(true)
-    setError('')
-
-    try {
-      await guardarBorradorPropiedad(propiedadId, textoFinal)
-      setPaso(3)
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'No se pudo guardar el borrador.',
-      )
-    } finally {
-      setInyectando(false)
-    }
-  }
-
-  const handleFinalizar = async () => {
-    if (inyectando) return
-
-    const textoFinal = wizard.borradorEditado.trim()
-    if (!textoFinal) {
-      setError('El borrador no puede estar vacío.')
-      setPaso(2)
-      return
-    }
-
-    if (wizard.alertas.activas) {
-      const algunoActivo = Object.values(wizard.alertas.eventos).some(Boolean)
-      if (!algunoActivo) {
-        setError('Activa al menos un tipo de alerta o desactiva las notificaciones.')
-        return
-      }
-      if (!wizard.alertas.contacto.trim()) {
-        setError('Introduce un contacto para recibir las alertas.')
-        return
-      }
-    }
-
-    setInyectando(true)
+    setIndexando(true)
     setError('')
 
     abortRef.current?.abort()
@@ -209,7 +121,7 @@ export default function ValidacionWizard({
     abortRef.current = controller
 
     try {
-      await guardarAlertasPropiedad(propiedadId, wizard.alertas)
+      await guardarBorradorPropiedad(propiedadId, textoFinal)
 
       await inyectarConocimientoFlujo3(
         {
@@ -219,7 +131,7 @@ export default function ValidacionWizard({
         controller.signal,
       )
 
-      navigate('/')
+      onIndexacionCompleta()
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return
 
@@ -228,29 +140,30 @@ export default function ValidacionWizard({
           ? 'No se pudo conectar con n8n (Flujo 3). Comprueba que el webhook processinfo acepte POST.'
           : err instanceof Error
             ? err.message
-            : 'No se pudo guardar las alertas o indexar el borrador.'
+            : 'No se pudo guardar el borrador o indexar el conocimiento.'
 
       setError(mensaje)
     } finally {
-      setInyectando(false)
+      setIndexando(false)
     }
   }
 
   return (
     <div className="animate-fade-in-up">
-      <div className="mb-8">
+      <div className="mb-8 text-center">
         <p className="text-sm font-medium uppercase tracking-[0.2em] text-indigo-400">
-          Validación final
+          Paso 5 de 6
         </p>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
           {nombreVivienda}
         </h1>
         <p className="mt-2 text-sm text-slate-400">
-          Revisa el borrador y configura las alertas antes de indexar.
+          Revisa el borrador generado. Al confirmar, indexaremos todo el
+          conocimiento con IA.
         </p>
       </div>
 
-      <div className="mb-8 flex justify-center gap-3 sm:gap-6">
+      <div className="mb-8 flex justify-center gap-6">
         {PASOS.map(({ numero, label }) => {
           const activo = paso === numero
           const completado = paso > numero
@@ -279,7 +192,7 @@ export default function ValidacionWizard({
         })}
       </div>
 
-      {error && paso >= 2 && (
+      {error && paso === 2 && (
         <div className="mb-6 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
           {error}
         </div>
@@ -293,148 +206,31 @@ export default function ValidacionWizard({
                 Borrador editable
               </h2>
               <p className="mt-1 text-sm text-slate-400">
-                Corrige cualquier dato antes de continuar (Wi-Fi, normas,
+                Corrige cualquier dato antes de indexar (Wi-Fi, normas,
                 accesos...).
               </p>
             </div>
             <textarea
               value={wizard.borradorEditado}
-              onChange={(e) => updateWizard({ borradorEditado: e.target.value })}
+              onChange={(e) =>
+                setWizard((prev) => ({
+                  ...prev,
+                  borradorEditado: e.target.value,
+                }))
+              }
               rows={16}
-              disabled={inyectando}
+              disabled={indexando}
               className={`resize-y font-mono text-[13px] leading-relaxed ${inputClassName}`}
               placeholder="El borrador estructurado aparecerá aquí..."
             />
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={handleSiguienteBorrador}
-                disabled={!wizard.borradorEditado.trim() || inyectando}
+                onClick={handleConfirmarBorrador}
+                disabled={!wizard.borradorEditado.trim() || indexando}
                 className="rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all hover:from-indigo-400 hover:to-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                Siguiente → Alertas
-              </button>
-            </div>
-          </div>
-        )}
-
-        {paso === 3 && (
-          <div className="animate-fade-in-up space-y-6">
-            <div>
-              <h2 className="text-lg font-semibold text-white">
-                Alertas al teléfono
-              </h2>
-              <p className="mt-1 text-sm text-slate-400">
-                Elige qué eventos críticos quieres que el bot te notifique
-                directamente.
-              </p>
-            </div>
-
-            <label className="flex cursor-pointer items-center justify-between rounded-xl border border-slate-800 bg-slate-950/50 px-4 py-4 transition-colors hover:border-indigo-500/30">
-              <div>
-                <p className="text-sm font-medium text-white">
-                  Activar notificaciones críticas
-                </p>
-                <p className="mt-0.5 text-xs text-slate-500">
-                  El bot avisará al propietario cuando detecte estos eventos.
-                </p>
-              </div>
-              <input
-                type="checkbox"
-                checked={wizard.alertas.activas}
-                onChange={(e) => updateAlertas({ activas: e.target.checked })}
-                className="h-5 w-5 rounded border-slate-600 bg-slate-900 text-indigo-500 focus:ring-indigo-500"
-              />
-            </label>
-
-            {wizard.alertas.activas && (
-              <>
-                <div className="space-y-3">
-                  <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                    Eventos a notificar
-                  </p>
-                  {EVENTOS_ALERTA.map(({ id, titulo, descripcion, icono }) => (
-                    <label
-                      key={id}
-                      className="flex cursor-pointer items-start gap-4 rounded-xl border border-slate-800 bg-slate-950/40 px-4 py-4 transition-colors hover:border-slate-700"
-                    >
-                      <span className="mt-0.5 text-xl" aria-hidden>
-                        {icono}
-                      </span>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-slate-200">
-                          {titulo}
-                        </p>
-                        <p className="mt-0.5 text-xs leading-relaxed text-slate-500">
-                          {descripcion}
-                        </p>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={wizard.alertas.eventos[id]}
-                        onChange={() => toggleEvento(id)}
-                        className="mt-1 h-5 w-5 shrink-0 rounded border-slate-600 bg-slate-900 text-indigo-500 focus:ring-indigo-500"
-                      />
-                    </label>
-                  ))}
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300">
-                      Canal de notificación
-                    </label>
-                    <select
-                      value={wizard.alertas.canal}
-                      onChange={(e) =>
-                        updateAlertas({
-                          canal: e.target.value as ConfigAlertas['canal'],
-                        })
-                      }
-                      className={`mt-2 ${inputClassName}`}
-                    >
-                      <option value="telegram">Telegram</option>
-                      <option value="email">Email</option>
-                      <option value="ambos">Ambos</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300">
-                      Contacto de alertas
-                    </label>
-                    <input
-                      type="text"
-                      value={wizard.alertas.contacto}
-                      onChange={(e) =>
-                        updateAlertas({ contacto: e.target.value })
-                      }
-                      placeholder="Chat ID de Telegram o email"
-                      className={`mt-2 ${inputClassName}`}
-                    />
-                    <p className="mt-1.5 text-xs text-slate-500">
-                      Se rellena con tu Telegram del onboarding si lo configuraste.
-                    </p>
-                  </div>
-                </div>
-              </>
-            )}
-
-            <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-between">
-              <button
-                type="button"
-                onClick={() => setPaso(2)}
-                disabled={inyectando}
-                className="rounded-xl border border-slate-700 px-5 py-3 text-sm text-slate-400 hover:border-slate-600 disabled:opacity-40"
-              >
-                ← Volver al borrador
-              </button>
-              <button
-                type="button"
-                onClick={handleFinalizar}
-                disabled={inyectando}
-                className="rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition-all hover:from-indigo-400 hover:to-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                🚀 Indexar con IA y finalizar
+                Confirmar e indexar con IA
               </button>
             </div>
           </div>
@@ -512,12 +308,15 @@ export default function ValidacionWizard({
         </div>
       )}
 
-      {inyectando && paso === 3 && (
+      {indexando && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md">
           <div className="mx-6 w-full max-w-lg rounded-2xl border border-slate-800 bg-slate-900/90 p-8 text-center shadow-2xl">
             <div className="mx-auto mb-6 h-14 w-14 animate-spin rounded-full border-[3px] border-indigo-500/20 border-t-indigo-400" />
             <p className="text-lg font-semibold leading-relaxed text-white">
-              Guardando alertas e indexando el conocimiento con IA...
+              Indexando el conocimiento con IA...
+            </p>
+            <p className="mt-2 text-sm text-slate-400">
+              Troceando el borrador y generando embeddings.
             </p>
           </div>
         </div>

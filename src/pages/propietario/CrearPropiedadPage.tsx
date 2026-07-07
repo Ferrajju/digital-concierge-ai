@@ -1,19 +1,40 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { crearPropiedadConDatos, obtenerPropietarioId } from '../../services/propiedadService'
+import AlertasConfigPanel from './components/AlertasConfigPanel'
+import CrearPropiedadLayout, {
+  type PasoCrearPropiedad,
+} from './components/CrearPropiedadLayout'
 import PropiedadChatPanel from './components/PropiedadChatPanel'
-import PropiedadDatosForm from './components/PropiedadDatosForm'
+import PropiedadUbicacionForm from './components/PropiedadUbicacionForm'
+import StepNombreAgente from './components/StepNombreAgente'
+import StepNombreVivienda from './components/StepNombreVivienda'
 import ValidacionWizard from './components/ValidacionWizard'
 import {
   FORMULARIO_INICIAL,
   type FormularioPropiedad,
 } from './types/formularioPropiedad'
 
-type FaseConfiguracion = 'datos' | 'chat' | 'validacion'
+type FaseConfiguracion =
+  | 'nombre'
+  | 'ubicacion'
+  | 'agente'
+  | 'chat'
+  | 'validacion'
+  | 'alertas'
+
+const FASE_A_PASO: Record<FaseConfiguracion, PasoCrearPropiedad> = {
+  nombre: 1,
+  ubicacion: 2,
+  agente: 3,
+  chat: 4,
+  validacion: 5,
+  alertas: 6,
+}
 
 export default function CrearPropiedadPage() {
   const navigate = useNavigate()
-  const [fase, setFase] = useState<FaseConfiguracion>('datos')
+  const [fase, setFase] = useState<FaseConfiguracion>('nombre')
   const [form, setForm] = useState<FormularioPropiedad>(FORMULARIO_INICIAL)
   const [propiedadId, setPropiedadId] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
@@ -25,35 +46,42 @@ export default function CrearPropiedadPage() {
 
   const updateForm = (updates: Partial<FormularioPropiedad>) => {
     setForm((prev) => ({ ...prev, ...updates }))
+    setError('')
   }
 
-  const handleConfirmar = async (e: React.FormEvent) => {
+  const handleContinuarNombre = () => {
+    const nombre = form.nombreVivienda.trim()
+    if (!nombre) {
+      setError('Introduce un nombre para tu apartamento.')
+      return
+    }
+    setFase('ubicacion')
+  }
+
+  const handleContinuarUbicacion = (e: React.FormEvent) => {
     e.preventDefault()
 
-    const nombreVivienda = form.nombreVivienda.trim()
-    const nombreIa = form.nombreIa.trim()
-    const direccionCalle = form.direccionCalle.trim()
-    const codigoPostal = form.codigoPostal.trim()
-    const ciudadRegion = form.ciudadRegion.trim()
-
-    if (!direccionCalle) {
+    if (!form.direccionCalle.trim()) {
       setError('Introduce la calle y número de la vivienda.')
       return
     }
-    if (!codigoPostal) {
+    if (!form.codigoPostal.trim()) {
       setError('Introduce el código postal.')
       return
     }
-    if (!ciudadRegion) {
+    if (!form.ciudadRegion.trim()) {
       setError('Introduce la ciudad o región.')
       return
     }
-    if (!nombreVivienda) {
-      setError('Introduce el nombre de la vivienda.')
-      return
-    }
+
+    setError('')
+    setFase('agente')
+  }
+
+  const handleCrearYComenzarChat = async () => {
+    const nombreIa = form.nombreIa.trim()
     if (!nombreIa) {
-      setError('Introduce el nombre de la IA.')
+      setError('Introduce un nombre para tu agente IA.')
       return
     }
 
@@ -62,12 +90,12 @@ export default function CrearPropiedadPage() {
 
     try {
       const id = await crearPropiedadConDatos({
-        nombreApartamento: nombreVivienda,
+        nombreApartamento: form.nombreVivienda.trim(),
         nombreIa,
-        ciudadRegion,
-        direccionCalle,
+        ciudadRegion: form.ciudadRegion.trim(),
+        direccionCalle: form.direccionCalle.trim(),
         pisoPuerta: form.pisoPuerta.trim(),
-        codigoPostal,
+        codigoPostal: form.codigoPostal.trim(),
         indicacionesAcceso: form.indicacionesAcceso.trim(),
       })
       setPropiedadId(id)
@@ -83,57 +111,67 @@ export default function CrearPropiedadPage() {
     }
   }
 
+  const paso = FASE_A_PASO[fase]
+  const anchoAmplio = fase === 'chat' || fase === 'validacion'
+
   return (
-    <div className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-100">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-32 top-0 h-96 w-96 rounded-full bg-indigo-600/20 blur-3xl" />
-        <div className="absolute -right-32 bottom-0 h-96 w-96 rounded-full bg-violet-600/15 blur-3xl" />
-      </div>
+    <CrearPropiedadLayout paso={paso} anchoAmplio={anchoAmplio}>
+      {fase === 'nombre' && (
+        <StepNombreVivienda
+          valor={form.nombreVivienda}
+          onChange={(nombreVivienda) => updateForm({ nombreVivienda })}
+          onContinuar={handleContinuarNombre}
+          error={error}
+        />
+      )}
 
-      <div className="relative z-10 mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
-        {fase === 'datos' && (
-          <div className="animate-fade-in-up">
-            <div className="mb-8 sm:mb-10">
-              <p className="text-sm font-medium uppercase tracking-[0.2em] text-indigo-400">
-                Nueva vivienda
-              </p>
-              <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-                Ubicación e identidad de tu alojamiento
-              </h1>
-              <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-400 sm:text-base">
-                Especifica dónde está tu casa con precisión. Después la IA te
-                hará preguntas para completar la configuración.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-sm sm:p-8">
-              <PropiedadDatosForm
-                form={form}
-                onChange={updateForm}
-                onSubmit={handleConfirmar}
-                guardando={guardando}
-                error={error}
-              />
-            </div>
-          </div>
-        )}
+      {fase === 'ubicacion' && (
+        <PropiedadUbicacionForm
+          form={form}
+          nombreVivienda={form.nombreVivienda}
+          onChange={updateForm}
+          onSubmit={handleContinuarUbicacion}
+          onVolver={() => setFase('nombre')}
+          guardando={false}
+          error={error}
+        />
+      )}
 
-        {fase === 'chat' && propiedadId && (
-          <div className="animate-fade-in-up">
-            <PropiedadChatPanel
-              propiedadId={propiedadId}
-              nombreVivienda={form.nombreVivienda}
-              onEntrevistaCompletada={() => setFase('validacion')}
-            />
-          </div>
-        )}
+      {fase === 'agente' && (
+        <StepNombreAgente
+          valor={form.nombreIa}
+          nombreVivienda={form.nombreVivienda}
+          onChange={(nombreIa) => updateForm({ nombreIa })}
+          onContinuar={handleCrearYComenzarChat}
+          onVolver={() => setFase('ubicacion')}
+          guardando={guardando}
+          error={error}
+        />
+      )}
 
-        {fase === 'validacion' && propiedadId && (
-          <ValidacionWizard
-            propiedadId={propiedadId}
-            nombreVivienda={form.nombreVivienda}
-          />
-        )}
-      </div>
-    </div>
+      {fase === 'chat' && propiedadId && (
+        <PropiedadChatPanel
+          propiedadId={propiedadId}
+          nombreVivienda={form.nombreVivienda}
+          nombreIa={form.nombreIa}
+          onEntrevistaCompletada={() => setFase('validacion')}
+        />
+      )}
+
+      {fase === 'validacion' && propiedadId && (
+        <ValidacionWizard
+          propiedadId={propiedadId}
+          nombreVivienda={form.nombreVivienda}
+          onIndexacionCompleta={() => setFase('alertas')}
+        />
+      )}
+
+      {fase === 'alertas' && propiedadId && (
+        <AlertasConfigPanel
+          propiedadId={propiedadId}
+          nombreVivienda={form.nombreVivienda}
+        />
+      )}
+    </CrearPropiedadLayout>
   )
 }

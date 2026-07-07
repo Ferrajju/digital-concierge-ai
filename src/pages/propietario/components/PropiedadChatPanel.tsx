@@ -19,12 +19,14 @@ const MENSAJE_INICIAL_IA: MensajeChat = {
 type PropiedadChatPanelProps = {
   propiedadId: string
   nombreVivienda: string
+  nombreIa: string
   onEntrevistaCompletada: () => void
 }
 
 export default function PropiedadChatPanel({
   propiedadId,
   nombreVivienda,
+  nombreIa,
   onEntrevistaCompletada,
 }: PropiedadChatPanelProps) {
   const [mensajes, setMensajes] = useState<MensajeChat[]>([MENSAJE_INICIAL_IA])
@@ -181,16 +183,16 @@ export default function PropiedadChatPanel({
 
   return (
     <>
-      <div className="mb-6">
+      <div className="mb-6 text-center sm:text-left">
         <p className="text-sm font-medium uppercase tracking-[0.2em] text-indigo-400">
-          Entrevista con la IA
+          Paso 4 de 6 · Entrevista con {nombreIa}
         </p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-          {nombreVivienda}
+          Configura {nombreVivienda}
         </h1>
-        <p className="mt-2 text-xs text-slate-500">
-          Sesión:{' '}
-          <span className="font-mono text-slate-400">{propiedadId}</span>
+        <p className="mt-2 text-sm text-slate-400">
+          Cuéntale a {nombreIa} todo lo que un huésped necesita saber: accesos,
+          Wi-Fi, normas y más.
         </p>
       </div>
 
@@ -223,7 +225,7 @@ export default function PropiedadChatPanel({
               >
                 {mensaje.remitente === 'ia' && (
                   <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-indigo-400">
-                    Asistente IA
+                    {nombreIa}
                   </p>
                 )}
                 {mensaje.texto}
