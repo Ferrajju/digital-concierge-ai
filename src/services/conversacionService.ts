@@ -1,10 +1,8 @@
 import { supabase } from './supabaseClient'
 import type { HistorialItem, MensajeChat } from '../pages/propietario/types/propiedadChat'
 
-const MAX_HISTORIAL = 4
-
 export function buildHistorial(mensajes: MensajeChat[]): HistorialItem[] {
-  return mensajes.slice(-MAX_HISTORIAL).map(({ remitente, texto }) => ({
+  return mensajes.map(({ remitente, texto }) => ({
     remitente,
     texto,
   }))
