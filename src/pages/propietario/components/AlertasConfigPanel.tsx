@@ -75,7 +75,7 @@ export default function AlertasConfigPanel({
 
     try {
       await guardarAlertasPropiedad(propiedadId, alertas)
-      navigate('/')
+      navigate('/dashboard')
     } catch (err) {
       setError(
         err instanceof Error

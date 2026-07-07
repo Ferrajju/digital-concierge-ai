@@ -31,7 +31,9 @@ export default function OnboardingPage() {
     setStep(3)
   }
 
-  const finalizarOnboarding = async (destino: '/' | '/configurar-vivienda') => {
+  const finalizarOnboarding = async (
+    destino: '/dashboard' | '/configurar-vivienda',
+  ) => {
     if (!businessProfile) {
       setError('Selecciona tu perfil de negocio antes de continuar.')
       setStep(1)
@@ -76,7 +78,7 @@ export default function OnboardingPage() {
             loading={loading}
             error={error}
             onSi={() => finalizarOnboarding('/configurar-vivienda')}
-            onNo={() => finalizarOnboarding('/')}
+            onNo={() => finalizarOnboarding('/dashboard')}
           />
         )}
       </div>

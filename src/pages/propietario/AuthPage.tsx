@@ -56,7 +56,7 @@ export default function AuthPage() {
       return
     }
 
-    navigate(propietario.onboarding_completed ? '/' : '/onboarding')
+    navigate(propietario.onboarding_completed ? '/dashboard' : '/onboarding')
   }
 
   const handleSignUp = async () => {
