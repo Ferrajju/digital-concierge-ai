@@ -76,3 +76,28 @@ export async function crearPropiedadConDatos(
   if (propiedadError) throw propiedadError
   return propiedad.id
 }
+
+export async function obtenerBorradorPropiedad(
+  propiedadId: string,
+): Promise<string> {
+  const { data, error } = await supabase
+    .from('propiedades')
+    .select('borrador_texto')
+    .eq('id', propiedadId)
+    .single()
+
+  if (error) throw error
+  return (data?.borrador_texto ?? '').trim()
+}
+
+export async function guardarBorradorPropiedad(
+  propiedadId: string,
+  borrador: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('propiedades')
+    .update({ borrador_texto: borrador })
+    .eq('id', propiedadId)
+
+  if (error) throw error
+}

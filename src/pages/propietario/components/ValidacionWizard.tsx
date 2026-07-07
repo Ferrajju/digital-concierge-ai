@@ -549,7 +549,8 @@ export default function ValidacionWizard({
                   <button
                     type="button"
                     onClick={() => setPaso(2)}
-                    className="mt-8 animate-pulse-soft rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-8 py-4 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition-all hover:from-indigo-400 hover:to-violet-500"
+                    disabled={!wizard.borradorEditado.trim()}
+                    className="mt-8 animate-pulse-soft rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-8 py-4 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition-all hover:from-indigo-400 hover:to-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     Revisar borrador →
                   </button>

@@ -4,6 +4,10 @@ import type {
   N8nFlujo2Payload,
   N8nFlujo3Payload,
 } from '../pages/propietario/types/propiedadChat'
+import {
+  guardarBorradorPropiedad,
+  obtenerBorradorPropiedad,
+} from './propiedadService'
 
 const FLUJO1_URL = import.meta.env.VITE_N8N_FLUJO1_WEBHOOK_URL
 const FLUJO2_URL = import.meta.env.VITE_N8N_FLUJO2_WEBHOOK_URL
@@ -28,25 +32,30 @@ function unwrapRecord(data: unknown): Record<string, unknown> {
   return {}
 }
 
-function extractTextFromRecord(record: Record<string, unknown>): string {
+function tryExtractTextFromRecord(record: Record<string, unknown>): string {
   for (const key of [
+    'borrador',
+    'borrador_texto',
+    'contenido_texto',
+    'texto_estructurado',
+    'resultado',
     'respuesta',
     'response',
     'texto',
     'message',
     'output',
     'text',
-    'borrador',
+    'content',
   ]) {
     const value = record[key]
     if (typeof value === 'string' && value.trim()) return value.trim()
   }
 
   if (record.output && typeof record.output === 'object') {
-    return extractTextFromRecord(record.output as Record<string, unknown>)
+    return tryExtractTextFromRecord(record.output as Record<string, unknown>)
   }
 
-  throw new Error('La respuesta de n8n no contiene un texto válido.')
+  return ''
 }
 
 function formatBloques(bloques: unknown[]): string {
@@ -65,15 +74,34 @@ function formatBloques(bloques: unknown[]): string {
     .join('\n\n')
 }
 
-function extractBorrador(data: unknown): string {
+function tryExtractBorrador(data: unknown): string {
   const record = unwrapRecord(data)
 
-  if (typeof record.borrador === 'string') return record.borrador.trim()
-  if (Array.isArray(record.borrador)) return formatBloques(record.borrador)
-  if (Array.isArray(record.bloques)) return formatBloques(record.bloques)
-  if (typeof record.draft === 'string') return record.draft.trim()
+  if (record.body && typeof record.body === 'object') {
+    const nested = tryExtractBorrador(record.body)
+    if (nested) return nested
+  }
 
-  return extractTextFromRecord(record)
+  if (typeof record.borrador === 'string' && record.borrador.trim()) {
+    return record.borrador.trim()
+  }
+  if (Array.isArray(record.borrador)) {
+    const formatted = formatBloques(record.borrador)
+    if (formatted) return formatted
+  }
+  if (Array.isArray(record.bloques)) {
+    const formatted = formatBloques(record.bloques)
+    if (formatted) return formatted
+  }
+  if (typeof record.draft === 'string' && record.draft.trim()) {
+    return record.draft.trim()
+  }
+
+  return tryExtractTextFromRecord(record)
+}
+
+function extractBorrador(data: unknown): string {
+  return tryExtractBorrador(data)
 }
 
 function parseBooleanStrict(value: unknown): boolean {
@@ -139,6 +167,17 @@ export async function enviarMensajeFlujo1(
   return parseFlujo1Response(await parseResponseJson(response))
 }
 
+async function parseResponseJsonOptional(response: Response): Promise<unknown | null> {
+  const text = (await response.text()).trim()
+  if (!text) return null
+
+  try {
+    return JSON.parse(text) as unknown
+  } catch {
+    return text
+  }
+}
+
 export async function procesarBorradorFlujo2(
   payload: N8nFlujo2Payload,
   signal?: AbortSignal,
@@ -156,7 +195,22 @@ export async function procesarBorradorFlujo2(
     throw new Error(`n8n Flujo 2 respondió con error ${response.status}.`)
   }
 
-  return extractBorrador(await parseResponseJson(response))
+  const raw = await parseResponseJsonOptional(response)
+  let borrador = raw ? extractBorrador(raw) : ''
+
+  if (!borrador) {
+    borrador = await obtenerBorradorPropiedad(payload.propiedad_id)
+  }
+
+  if (!borrador) {
+    throw new Error(
+      'El Flujo 2 no devolvió borrador. Comprueba que n8n responda con { "borrador": "..." } o guarde el texto en propiedades.borrador_texto.',
+    )
+  }
+
+  await guardarBorradorPropiedad(payload.propiedad_id, borrador)
+
+  return borrador
 }
 
 export async function inyectarConocimientoFlujo3(
