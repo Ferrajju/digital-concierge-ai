@@ -1,14 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import {
   buildHistorial,
   cargarConversacion,
   guardarMensajeConversacion,
 } from '../../../services/conversacionService'
-import {
-  enviarMensajeFlujo1,
-  procesarConversacionFlujo2,
-} from '../../../services/n8nService'
+import { enviarMensajeFlujo1 } from '../../../services/n8nService'
 import type { MensajeChat } from '../types/propiedadChat'
 
 const MENSAJE_INICIAL_IA: MensajeChat = {
@@ -21,19 +17,19 @@ const MENSAJE_INICIAL_IA: MensajeChat = {
 type PropiedadChatPanelProps = {
   propiedadId: string
   nombreVivienda: string
+  onEntrevistaCompletada: () => void
 }
 
 export default function PropiedadChatPanel({
   propiedadId,
   nombreVivienda,
+  onEntrevistaCompletada,
 }: PropiedadChatPanelProps) {
-  const navigate = useNavigate()
   const [mensajes, setMensajes] = useState<MensajeChat[]>([MENSAJE_INICIAL_IA])
   const [input, setInput] = useState('')
   const [escribiendo, setEscribiendo] = useState(false)
   const [cargandoHistorial, setCargandoHistorial] = useState(true)
   const [error, setError] = useState('')
-  const [procesando, setProcesando] = useState(false)
   const mensajesEndRef = useRef<HTMLDivElement>(null)
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -79,7 +75,7 @@ export default function PropiedadChatPanel({
   const handleEnviar = async (e: React.FormEvent) => {
     e.preventDefault()
     const texto = input.trim()
-    if (!texto || escribiendo || procesando) return
+    if (!texto || escribiendo) return
 
     const historial = buildHistorial(mensajes)
 
@@ -109,7 +105,7 @@ export default function PropiedadChatPanel({
         prev.map((m) => (m.id === mensajeOptimista.id ? mensajeGuardado : m)),
       )
 
-      const respuestaIa = await enviarMensajeFlujo1(
+      const { respuesta, finalizado } = await enviarMensajeFlujo1(
         {
           propiedad_id: propiedadId,
           mensaje: texto,
@@ -121,10 +117,14 @@ export default function PropiedadChatPanel({
       const mensajeIa = await guardarMensajeConversacion(
         propiedadId,
         'ia',
-        respuestaIa,
+        respuesta,
       )
 
       setMensajes((prev) => [...prev, mensajeIa])
+
+      if (finalizado) {
+        setTimeout(() => onEntrevistaCompletada(), 1200)
+      }
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return
 
@@ -134,36 +134,6 @@ export default function PropiedadChatPanel({
       )
     } finally {
       setEscribiendo(false)
-    }
-  }
-
-  const handleFinalizar = async () => {
-    if (procesando || escribiendo) return
-
-    setProcesando(true)
-    setError('')
-
-    abortRef.current?.abort()
-    const controller = new AbortController()
-    abortRef.current = controller
-
-    try {
-      await procesarConversacionFlujo2(
-        { propiedad_id: propiedadId },
-        controller.signal,
-      )
-      setMensajes([])
-      setInput('')
-      navigate('/')
-    } catch (err) {
-      if (err instanceof Error && err.name === 'AbortError') return
-
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'No se pudo completar el procesamiento.',
-      )
-      setProcesando(false)
     }
   }
 
@@ -180,27 +150,17 @@ export default function PropiedadChatPanel({
 
   return (
     <>
-      <div className="mb-6 flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-indigo-400">
-            Entrevista con la IA
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-            {nombreVivienda}
-          </h1>
-          <p className="mt-2 text-xs text-slate-500">
-            Sesión:{' '}
-            <span className="font-mono text-slate-400">{propiedadId}</span>
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={handleFinalizar}
-          disabled={procesando || escribiendo}
-          className="shrink-0 rounded-xl border border-indigo-500/40 bg-indigo-500/10 px-4 py-2 text-xs font-semibold text-indigo-300 transition-colors hover:border-indigo-400/60 hover:bg-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          Finalizar y Procesar AI
-        </button>
+      <div className="mb-6">
+        <p className="text-sm font-medium uppercase tracking-[0.2em] text-indigo-400">
+          Entrevista con la IA
+        </p>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+          {nombreVivienda}
+        </h1>
+        <p className="mt-2 text-xs text-slate-500">
+          Sesión:{' '}
+          <span className="font-mono text-slate-400">{propiedadId}</span>
+        </p>
       </div>
 
       {error && (
@@ -263,12 +223,12 @@ export default function PropiedadChatPanel({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Describe tu alojamiento libremente..."
-              disabled={escribiendo || procesando}
+              disabled={escribiendo}
               className="flex-1 rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-white placeholder:text-slate-600 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50"
             />
             <button
               type="submit"
-              disabled={!input.trim() || escribiendo || procesando}
+              disabled={!input.trim() || escribiendo}
               className="shrink-0 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all duration-300 hover:from-indigo-400 hover:to-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
             >
               Enviar información
@@ -276,18 +236,6 @@ export default function PropiedadChatPanel({
           </div>
         </form>
       </div>
-
-      {procesando && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md">
-          <div className="mx-6 w-full max-w-lg rounded-2xl border border-slate-800 bg-slate-900/90 p-8 text-center shadow-2xl">
-            <div className="mx-auto mb-6 h-14 w-14 animate-spin rounded-full border-[3px] border-indigo-500/20 border-t-indigo-400" />
-            <p className="text-lg font-semibold leading-relaxed text-white">
-              Analizando toda la conversación y generando tus tarjetas
-              vectoriales... Por favor, no cierres esta ventana.
-            </p>
-          </div>
-        </div>
-      )}
     </>
   )
 }

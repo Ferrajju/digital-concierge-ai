@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import { crearPropiedadConDatos, obtenerPropietarioId } from '../../services/propiedadService'
 import PropiedadChatPanel from './components/PropiedadChatPanel'
 import PropiedadDatosForm from './components/PropiedadDatosForm'
+import ValidacionWizard from './components/ValidacionWizard'
 import {
   FORMULARIO_INICIAL,
   type FormularioPropiedad,
 } from './types/formularioPropiedad'
 
-type FaseConfiguracion = 'datos' | 'chat'
+type FaseConfiguracion = 'datos' | 'chat' | 'validacion'
 
 export default function CrearPropiedadPage() {
   const navigate = useNavigate()
@@ -39,22 +40,18 @@ export default function CrearPropiedadPage() {
       setError('Introduce la calle y número de la vivienda.')
       return
     }
-
     if (!codigoPostal) {
       setError('Introduce el código postal.')
       return
     }
-
     if (!ciudadRegion) {
       setError('Introduce la ciudad o región.')
       return
     }
-
     if (!nombreVivienda) {
       setError('Introduce el nombre de la vivienda.')
       return
     }
-
     if (!nombreIa) {
       setError('Introduce el nombre de la IA.')
       return
@@ -94,7 +91,7 @@ export default function CrearPropiedadPage() {
       </div>
 
       <div className="relative z-10 mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
-        {fase === 'datos' ? (
+        {fase === 'datos' && (
           <div className="animate-fade-in-up">
             <div className="mb-8 sm:mb-10">
               <p className="text-sm font-medium uppercase tracking-[0.2em] text-indigo-400">
@@ -108,7 +105,6 @@ export default function CrearPropiedadPage() {
                 hará preguntas para completar la configuración.
               </p>
             </div>
-
             <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-sm sm:p-8">
               <PropiedadDatosForm
                 form={form}
@@ -119,15 +115,23 @@ export default function CrearPropiedadPage() {
               />
             </div>
           </div>
-        ) : (
-          propiedadId && (
-            <div className="animate-fade-in-up">
-              <PropiedadChatPanel
-                propiedadId={propiedadId}
-                nombreVivienda={form.nombreVivienda}
-              />
-            </div>
-          )
+        )}
+
+        {fase === 'chat' && propiedadId && (
+          <div className="animate-fade-in-up">
+            <PropiedadChatPanel
+              propiedadId={propiedadId}
+              nombreVivienda={form.nombreVivienda}
+              onEntrevistaCompletada={() => setFase('validacion')}
+            />
+          </div>
+        )}
+
+        {fase === 'validacion' && propiedadId && (
+          <ValidacionWizard
+            propiedadId={propiedadId}
+            nombreVivienda={form.nombreVivienda}
+          />
         )}
       </div>
     </div>
