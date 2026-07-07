@@ -9,7 +9,7 @@ type OnboardingLayoutProps = {
 const STEPS = [
   { number: 1, label: 'Perfil' },
   { number: 2, label: 'Telegram' },
-  { number: 3, label: 'Configuración' },
+  { number: 3, label: 'Decisión' },
 ] as const
 
 export default function OnboardingLayout({
