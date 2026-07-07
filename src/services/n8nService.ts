@@ -102,15 +102,20 @@ function parseFlujo1Response(data: unknown): N8nFlujo1Response {
 }
 
 async function parseResponseJson(response: Response): Promise<unknown> {
-  const contentType = response.headers.get('content-type') ?? ''
-  if (contentType.includes('application/json')) {
-    return response.json()
+  const text = (await response.text()).trim()
+
+  if (!text) {
+    throw new Error(
+      'n8n devolvió una respuesta vacía. Comprueba que el webhook use "Respond to Webhook" y devuelva { "respuesta": "...", "finalizado": false }.',
+    )
   }
-  const text = await response.text()
+
   try {
-    return JSON.parse(text)
+    return JSON.parse(text) as unknown
   } catch {
-    return text
+    throw new Error(
+      'n8n devolvió un JSON inválido. Revisa el nodo "Respond to Webhook" del Flujo 1.',
+    )
   }
 }
 
