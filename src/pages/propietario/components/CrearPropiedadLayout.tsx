@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-export type PasoCrearPropiedad = 1 | 2 | 3 | 4 | 5 | 6
+export type PasoCrearPropiedad = 1 | 2 | 3 | 4 | 5 | 6 | 7
 
 type CrearPropiedadLayoutProps = {
   paso: PasoCrearPropiedad
@@ -14,7 +14,8 @@ const PASOS = [
   { numero: 3, label: 'Agente' },
   { numero: 4, label: 'Chat' },
   { numero: 5, label: 'Borrador' },
-  { numero: 6, label: 'Alertas' },
+  { numero: 6, label: 'Guía' },
+  { numero: 7, label: 'Alertas' },
 ] as const
 
 export default function CrearPropiedadLayout({
@@ -68,7 +69,7 @@ export default function CrearPropiedadLayout({
                   {label}
                 </span>
               </div>
-              {numero < 6 && (
+              {numero < 7 && (
                 <div
                   className={`mb-4 h-px w-4 transition-colors duration-500 sm:mb-5 sm:w-8 ${
                     completado ? 'bg-indigo-500/50' : 'bg-slate-800'

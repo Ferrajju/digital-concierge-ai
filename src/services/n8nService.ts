@@ -4,6 +4,11 @@ import type {
   N8nFlujo2Payload,
   N8nFlujo3Payload,
 } from '../pages/propietario/types/propiedadChat'
+import type {
+  CategoriaGuiaLocal,
+  LugarGoogleRaw,
+  TarjetaGuiaLocal,
+} from '../pages/propietario/types/guiaLocal'
 import {
   obtenerBorradorPropiedad,
 } from './propiedadService'
@@ -11,6 +16,7 @@ import {
 const FLUJO1_URL = import.meta.env.VITE_N8N_FLUJO1_WEBHOOK_URL
 const FLUJO2_URL = import.meta.env.VITE_N8N_FLUJO2_WEBHOOK_URL
 const FLUJO3_URL = import.meta.env.VITE_N8N_FLUJO3_WEBHOOK_URL
+const GUIA_LOCAL_URL = import.meta.env.VITE_N8N_GUIA_LOCAL_WEBHOOK_URL
 
 function assertWebhookUrl(url: string | undefined, flujo: string): asserts url is string {
   const placeholders = ['TU_URL_WEBHOOK_N8N_AQUI', 'TU_URL_WEBHOOK_N8N_BATCH_AQUI', 'TU_URL_WEBHOOK_N8N_EMBEDDINGS_AQUI']
@@ -231,4 +237,77 @@ export async function inyectarConocimientoFlujo3(
       `n8n Flujo 3 respondió con error ${response.status}.${detalle}`,
     )
   }
+}
+
+export type N8nGuiaLocalPayload = {
+  direccion: string
+  lugares: LugarGoogleRaw[]
+}
+
+type TarjetaGuiaLocalN8n = {
+  categoria: CategoriaGuiaLocal
+  nombre: string
+  distancia: string
+  informacion: string
+}
+
+function parseTarjetasGuiaLocal(data: unknown): TarjetaGuiaLocal[] {
+  const record = unwrapRecord(data)
+  const tarjetasRaw = record.tarjetas
+
+  if (!Array.isArray(tarjetasRaw)) {
+    throw new Error(
+      'n8n no devolvió un array "tarjetas" válido para la Guía Local.',
+    )
+  }
+
+  const tarjetas: TarjetaGuiaLocal[] = []
+
+  for (const item of tarjetasRaw) {
+    if (!item || typeof item !== 'object') continue
+    const tarjeta = item as TarjetaGuiaLocalN8n
+    if (
+      typeof tarjeta.nombre !== 'string' ||
+      typeof tarjeta.distancia !== 'string' ||
+      typeof tarjeta.informacion !== 'string' ||
+      typeof tarjeta.categoria !== 'string'
+    ) {
+      continue
+    }
+
+    tarjetas.push({
+      id: crypto.randomUUID(),
+      categoria: tarjeta.categoria as CategoriaGuiaLocal,
+      nombre: tarjeta.nombre.trim(),
+      distancia: tarjeta.distancia.trim(),
+      informacion: tarjeta.informacion.trim(),
+      activa: true,
+    })
+  }
+
+  return tarjetas
+}
+
+export async function generarTarjetasGuiaLocalN8n(
+  payload: N8nGuiaLocalPayload,
+  signal?: AbortSignal,
+): Promise<TarjetaGuiaLocal[]> {
+  const placeholders = ['TU_URL_WEBHOOK_GUIA_LOCAL_AQUI']
+  if (!GUIA_LOCAL_URL || placeholders.includes(GUIA_LOCAL_URL)) {
+    throw new Error('Webhook de Guía Local no configurado.')
+  }
+
+  const response = await fetch(GUIA_LOCAL_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    signal,
+  })
+
+  if (!response.ok) {
+    throw new Error(`n8n Guía Local respondió con error ${response.status}.`)
+  }
+
+  const raw = await parseResponseJson(response)
+  return parseTarjetasGuiaLocal(raw)
 }

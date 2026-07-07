@@ -37,7 +37,7 @@ export default function PropiedadUbicacionForm({
     <div className="animate-fade-in-up">
       <div className="mb-8 text-center sm:mb-10">
         <p className="text-sm font-medium uppercase tracking-[0.2em] text-indigo-400">
-          Paso 2 de 6
+          Paso 2 de 7
         </p>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
           ¿Dónde está <span className="text-indigo-300">{nombreVivienda}</span>?

@@ -94,14 +94,14 @@ export default function AlertasConfigPanel({
           ✓
         </div>
         <p className="text-sm font-medium uppercase tracking-[0.2em] text-indigo-400">
-          Paso 6 de 6
+          Paso 7 de 7
         </p>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
           Alertas para {nombreVivienda}
         </h1>
         <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-slate-400">
-          El conocimiento ya está indexado. Elige qué eventos críticos quieres
-          que el bot te notifique directamente al teléfono.
+          El manual y la guía local ya están indexados. Elige qué eventos críticos
+          quieres que el bot te notifique directamente al teléfono.
         </p>
       </div>
 

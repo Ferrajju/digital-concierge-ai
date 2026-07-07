@@ -185,7 +185,7 @@ export default function PropiedadChatPanel({
     <>
       <div className="mb-6 text-center sm:text-left">
         <p className="text-sm font-medium uppercase tracking-[0.2em] text-indigo-400">
-          Paso 4 de 6 · Entrevista con {nombreIa}
+          Paso 4 de 7 · Entrevista con {nombreIa}
         </p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
           Configura {nombreVivienda}

@@ -34,7 +34,7 @@ export default function StepNombreAgente({
           🤖
         </div>
         <p className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-indigo-400">
-          Paso 3 de 6
+          Paso 3 de 7
         </p>
         <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
           Dale un nombre a tu agente IA

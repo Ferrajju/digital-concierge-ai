@@ -26,7 +26,7 @@ export default function StepNombreVivienda({
           🏠
         </div>
         <p className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-indigo-400">
-          Paso 1 de 6
+          Paso 1 de 7
         </p>
         <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
           ¿Cómo quieres llamar a tu apartamento?

@@ -5,6 +5,7 @@ import AlertasConfigPanel from './components/AlertasConfigPanel'
 import CrearPropiedadLayout, {
   type PasoCrearPropiedad,
 } from './components/CrearPropiedadLayout'
+import GuiaLocalPanel from './components/GuiaLocalPanel'
 import PropiedadChatPanel from './components/PropiedadChatPanel'
 import PropiedadUbicacionForm from './components/PropiedadUbicacionForm'
 import StepNombreAgente from './components/StepNombreAgente'
@@ -21,6 +22,7 @@ type FaseConfiguracion =
   | 'agente'
   | 'chat'
   | 'validacion'
+  | 'guiaLocal'
   | 'alertas'
 
 const FASE_A_PASO: Record<FaseConfiguracion, PasoCrearPropiedad> = {
@@ -29,7 +31,19 @@ const FASE_A_PASO: Record<FaseConfiguracion, PasoCrearPropiedad> = {
   agente: 3,
   chat: 4,
   validacion: 5,
-  alertas: 6,
+  guiaLocal: 6,
+  alertas: 7,
+}
+
+function construirDireccionCompleta(form: FormularioPropiedad): string {
+  const partes = [
+    form.direccionCalle.trim(),
+    form.pisoPuerta.trim(),
+    form.codigoPostal.trim(),
+    form.ciudadRegion.trim(),
+  ].filter(Boolean)
+
+  return partes.join(', ')
 }
 
 export default function CrearPropiedadPage() {
@@ -112,7 +126,8 @@ export default function CrearPropiedadPage() {
   }
 
   const paso = FASE_A_PASO[fase]
-  const anchoAmplio = fase === 'chat' || fase === 'validacion'
+  const anchoAmplio =
+    fase === 'chat' || fase === 'validacion' || fase === 'guiaLocal'
 
   return (
     <CrearPropiedadLayout paso={paso} anchoAmplio={anchoAmplio}>
@@ -162,7 +177,16 @@ export default function CrearPropiedadPage() {
         <ValidacionWizard
           propiedadId={propiedadId}
           nombreVivienda={form.nombreVivienda}
-          onIndexacionCompleta={() => setFase('alertas')}
+          onIndexacionCompleta={() => setFase('guiaLocal')}
+        />
+      )}
+
+      {fase === 'guiaLocal' && propiedadId && (
+        <GuiaLocalPanel
+          propiedadId={propiedadId}
+          nombreVivienda={form.nombreVivienda}
+          direccionCompleta={construirDireccionCompleta(form)}
+          onCompleta={() => setFase('alertas')}
         />
       )}
 
