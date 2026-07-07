@@ -141,11 +141,16 @@ export default function ValidacionWizard({
       navigate('/')
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'No se pudo guardar o indexar el borrador.',
-      )
+
+      const mensaje =
+        err instanceof TypeError && err.message === 'Failed to fetch'
+          ? 'No se pudo conectar con n8n (Flujo 3). Comprueba que el webhook processinfo acepte POST y que el workflow esté activo.'
+          : err instanceof Error
+            ? err.message
+            : 'No se pudo guardar o indexar el borrador.'
+
+      setError(mensaje)
+    } finally {
       setInyectando(false)
     }
   }

@@ -224,6 +224,11 @@ export async function inyectarConocimientoFlujo3(
   })
 
   if (!response.ok) {
-    throw new Error(`n8n Flujo 3 respondió con error ${response.status}.`)
+    const detalle = response.status === 404
+      ? ' El webhook no acepta POST — configura el nodo Webhook de n8n en método POST.'
+      : ''
+    throw new Error(
+      `n8n Flujo 3 respondió con error ${response.status}.${detalle}`,
+    )
   }
 }
