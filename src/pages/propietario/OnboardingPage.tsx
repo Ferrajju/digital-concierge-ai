@@ -26,7 +26,12 @@ export default function OnboardingPage() {
     setStep(3)
   }
 
-  const finalizarOnboarding = async (destino: '/' | '/crear-propiedad') => {
+  const handleConfigureLater = () => {
+    setTelegramChatId('')
+    setStep(3)
+  }
+
+  const finalizarOnboarding = async (destino: '/' | '/configurar-vivienda') => {
     if (!businessProfile) {
       setError('Selecciona tu perfil de negocio antes de continuar.')
       setStep(1)
@@ -40,38 +45,22 @@ export default function OnboardingPage() {
       await guardarOnboardingPropietario({
         perfil: businessProfile,
         telegramChatId,
+        onboardingCompleted: true,
       })
       navigate(destino)
     } catch (err) {
-      const mensaje =
+      setError(
         err instanceof Error
           ? err.message
-          : 'No se pudo guardar tu configuración.'
-      setError(mensaje)
+          : 'No se pudo guardar tu configuración.',
+      )
     } finally {
       setLoading(false)
     }
   }
 
-  const handleSaltar = () => {
-    navigate('/')
-  }
-
   return (
-    <OnboardingLayout
-      step={step}
-      headerAction={
-        step < 3 ? (
-          <button
-            type="button"
-            onClick={handleSaltar}
-            className="text-xs font-medium text-slate-500 transition-colors hover:text-slate-300"
-          >
-            Saltar por ahora
-          </button>
-        ) : undefined
-      }
-    >
+    <OnboardingLayout step={step}>
       <div key={step} className="transition-all duration-500">
         {step === 1 && <StepSegmentation onSelect={handleProfileSelect} />}
         {step === 2 && (
@@ -79,14 +68,15 @@ export default function OnboardingPage() {
             telegramChatId={telegramChatId}
             onTelegramChatIdChange={setTelegramChatId}
             onContinue={handleTelegramContinue}
+            onConfigureLater={handleConfigureLater}
           />
         )}
         {step === 3 && (
           <StepEncrucijada
             loading={loading}
             error={error}
-            onIrAlPanel={() => finalizarOnboarding('/')}
-            onConfigurarVivienda={() => finalizarOnboarding('/crear-propiedad')}
+            onSi={() => finalizarOnboarding('/configurar-vivienda')}
+            onNo={() => finalizarOnboarding('/')}
           />
         )}
       </div>

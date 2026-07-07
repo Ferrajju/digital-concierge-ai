@@ -13,48 +13,39 @@ export async function obtenerPropietarioId(): Promise<string> {
   return user.id
 }
 
-export async function obtenerOCrearZona(propietarioId: string): Promise<string> {
-  const { data: zonas, error: selectError } = await supabase
-    .from('zonas')
-    .select('id')
-    .eq('propietario_id', propietarioId)
-    .limit(1)
+export type CrearPropiedadParams = {
+  nombreApartamento: string
+  ubicacionBase: string
+}
 
-  if (selectError) throw selectError
-  if (zonas && zonas.length > 0) return zonas[0].id
+export async function crearPropiedadConDatos({
+  nombreApartamento,
+  ubicacionBase,
+}: CrearPropiedadParams): Promise<string> {
+  const propietarioId = await obtenerPropietarioId()
 
-  const { data: nuevaZona, error: insertError } = await supabase
+  const { data: zona, error: zonaError } = await supabase
     .from('zonas')
     .insert({
       propietario_id: propietarioId,
       nombre_zona: 'General',
-      ubicacion_base: 'Por definir',
+      ubicacion_base: ubicacionBase,
     })
     .select('id')
     .single()
 
-  if (insertError) throw insertError
-  return nuevaZona.id
-}
+  if (zonaError) throw zonaError
 
-export async function crearPropiedadEnConfiguracion(
-  zonaId: string,
-): Promise<string> {
-  const { data, error } = await supabase
+  const { data: propiedad, error: propiedadError } = await supabase
     .from('propiedades')
     .insert({
-      zona_id: zonaId,
-      nombre_apartamento: 'Nuevo Alojamiento en Configuración',
+      zona_id: zona.id,
+      nombre_apartamento: nombreApartamento,
+      borrador_texto: '',
     })
     .select('id')
     .single()
 
-  if (error) throw error
-  return data.id
-}
-
-export async function inicializarNuevaPropiedad(): Promise<string> {
-  const propietarioId = await obtenerPropietarioId()
-  const zonaId = await obtenerOCrearZona(propietarioId)
-  return crearPropiedadEnConfiguracion(zonaId)
+  if (propiedadError) throw propiedadError
+  return propiedad.id
 }

@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import WelcomePage from './pages/huesped/WelcomePage'
 import AuthPage from './pages/propietario/AuthPage'
 import CrearPropiedadPage from './pages/propietario/CrearPropiedadPage'
@@ -12,7 +12,8 @@ function App() {
         <Route path="/" element={<DashboardPage />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
-        <Route path="/crear-propiedad" element={<CrearPropiedadPage />} />
+        <Route path="/configurar-vivienda" element={<CrearPropiedadPage />} />
+        <Route path="/crear-propiedad" element={<Navigate to="/configurar-vivienda" replace />} />
         <Route path="/welcome" element={<WelcomePage />} />
       </Routes>
     </BrowserRouter>
