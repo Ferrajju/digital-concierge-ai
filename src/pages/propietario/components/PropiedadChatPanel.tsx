@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
+  buildHistorial,
+  cargarConversacion,
+  guardarMensajeConversacion,
+} from '../../../services/conversacionService'
+import {
   enviarMensajeFlujo1,
   procesarConversacionFlujo2,
 } from '../../../services/n8nService'
@@ -26,45 +31,104 @@ export default function PropiedadChatPanel({
   const [mensajes, setMensajes] = useState<MensajeChat[]>([MENSAJE_INICIAL_IA])
   const [input, setInput] = useState('')
   const [escribiendo, setEscribiendo] = useState(false)
+  const [cargandoHistorial, setCargandoHistorial] = useState(true)
   const [error, setError] = useState('')
   const [procesando, setProcesando] = useState(false)
   const mensajesEndRef = useRef<HTMLDivElement>(null)
+  const chatContainerRef = useRef<HTMLDivElement>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
+    let activo = true
+
+    const cargar = async () => {
+      try {
+        const historial = await cargarConversacion(propiedadId)
+        if (!activo) return
+        if (historial.length > 0) {
+          setMensajes(historial)
+        }
+      } catch (err) {
+        if (!activo) return
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'No se pudo cargar la conversación.',
+        )
+      } finally {
+        if (activo) setCargandoHistorial(false)
+      }
+    }
+
+    cargar()
+
+    return () => {
+      activo = false
+      abortRef.current?.abort()
+    }
+  }, [propiedadId])
+
+  useEffect(() => {
+    const container = chatContainerRef.current
+    if (container) {
+      container.scrollTop = container.scrollHeight
+    }
     mensajesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [mensajes, escribiendo])
 
   const handleEnviar = async (e: React.FormEvent) => {
     e.preventDefault()
     const texto = input.trim()
-    if (!texto || escribiendo) return
+    if (!texto || escribiendo || procesando) return
 
-    const mensajePropietario: MensajeChat = {
+    const historial = buildHistorial(mensajes)
+
+    const mensajeOptimista: MensajeChat = {
       id: crypto.randomUUID(),
       remitente: 'propietario',
       texto,
     }
 
-    setMensajes((prev) => [...prev, mensajePropietario])
+    setMensajes((prev) => [...prev, mensajeOptimista])
     setInput('')
     setError('')
     setEscribiendo(true)
 
-    try {
-      const respuestaIa = await enviarMensajeFlujo1({
-        propiedad_id: propiedadId,
-        mensaje: texto,
-      })
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
 
-      setMensajes((prev) => [
-        ...prev,
+    try {
+      const mensajeGuardado = await guardarMensajeConversacion(
+        propiedadId,
+        'propietario',
+        texto,
+      )
+
+      setMensajes((prev) =>
+        prev.map((m) => (m.id === mensajeOptimista.id ? mensajeGuardado : m)),
+      )
+
+      const respuestaIa = await enviarMensajeFlujo1(
         {
-          id: crypto.randomUUID(),
-          remitente: 'ia',
-          texto: respuestaIa,
+          propiedad_id: propiedadId,
+          mensaje: texto,
+          historial,
         },
-      ])
+        controller.signal,
+      )
+
+      const mensajeIa = await guardarMensajeConversacion(
+        propiedadId,
+        'ia',
+        respuestaIa,
+      )
+
+      setMensajes((prev) => [...prev, mensajeIa])
     } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return
+
+      setMensajes((prev) => prev.filter((m) => m.id !== mensajeOptimista.id))
       setError(
         err instanceof Error ? err.message : 'No se pudo contactar con n8n.',
       )
@@ -74,15 +138,26 @@ export default function PropiedadChatPanel({
   }
 
   const handleFinalizar = async () => {
-    if (procesando) return
+    if (procesando || escribiendo) return
 
     setProcesando(true)
     setError('')
 
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+
     try {
-      await procesarConversacionFlujo2({ propiedad_id: propiedadId })
+      await procesarConversacionFlujo2(
+        { propiedad_id: propiedadId },
+        controller.signal,
+      )
+      setMensajes([])
+      setInput('')
       navigate('/')
     } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return
+
       setError(
         err instanceof Error
           ? err.message
@@ -90,6 +165,17 @@ export default function PropiedadChatPanel({
       )
       setProcesando(false)
     }
+  }
+
+  if (cargandoHistorial) {
+    return (
+      <div className="flex min-h-[420px] items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-[3px] border-indigo-500/20 border-t-indigo-400" />
+          <p className="text-sm text-slate-400">Cargando conversación...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -103,7 +189,8 @@ export default function PropiedadChatPanel({
             {nombreVivienda}
           </h1>
           <p className="mt-2 text-xs text-slate-500">
-            ID: <span className="font-mono text-slate-400">{propiedadId}</span>
+            Sesión:{' '}
+            <span className="font-mono text-slate-400">{propiedadId}</span>
           </p>
         </div>
         <button
@@ -123,7 +210,10 @@ export default function PropiedadChatPanel({
       )}
 
       <div className="flex h-[calc(100vh-14rem)] min-h-[480px] flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60 backdrop-blur-sm">
-        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-6 sm:px-6">
+        <div
+          ref={chatContainerRef}
+          className="flex-1 space-y-4 overflow-y-auto px-5 py-6 sm:px-6"
+        >
           {mensajes.map((mensaje) => (
             <div
               key={mensaje.id}
@@ -153,7 +243,9 @@ export default function PropiedadChatPanel({
           {escribiendo && (
             <div className="flex justify-start">
               <div className="rounded-2xl bg-slate-800 px-4 py-3 ring-1 ring-slate-700">
-                <p className="text-xs text-slate-400">La IA está respondiendo...</p>
+                <p className="text-xs text-slate-400">
+                  La IA está escribiendo y tomando notas...
+                </p>
               </div>
             </div>
           )}
@@ -190,7 +282,7 @@ export default function PropiedadChatPanel({
           <div className="mx-6 w-full max-w-lg rounded-2xl border border-slate-800 bg-slate-900/90 p-8 text-center shadow-2xl">
             <div className="mx-auto mb-6 h-14 w-14 animate-spin rounded-full border-[3px] border-indigo-500/20 border-t-indigo-400" />
             <p className="text-lg font-semibold leading-relaxed text-white">
-              Procesando toda la conversación y generando tus tarjetas
+              Analizando toda la conversación y generando tus tarjetas
               vectoriales... Por favor, no cierres esta ventana.
             </p>
           </div>

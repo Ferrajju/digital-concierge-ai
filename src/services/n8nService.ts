@@ -28,6 +28,7 @@ function extractN8nResponse(data: unknown): string {
 
 export async function enviarMensajeFlujo1(
   payload: N8nFlujo1Payload,
+  signal?: AbortSignal,
 ): Promise<string> {
   assertWebhookUrl(FLUJO1_URL, 'FLUJO1')
 
@@ -35,6 +36,7 @@ export async function enviarMensajeFlujo1(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
+    signal,
   })
 
   if (!response.ok) {
@@ -52,6 +54,7 @@ export async function enviarMensajeFlujo1(
 
 export async function procesarConversacionFlujo2(
   payload: N8nFlujo2Payload,
+  signal?: AbortSignal,
 ): Promise<void> {
   assertWebhookUrl(FLUJO2_URL, 'FLUJO2')
 
@@ -59,6 +62,7 @@ export async function procesarConversacionFlujo2(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
+    signal,
   })
 
   if (!response.ok) {

@@ -4,9 +4,15 @@ export type MensajeChat = {
   texto: string
 }
 
+export type HistorialItem = {
+  remitente: 'propietario' | 'ia'
+  texto: string
+}
+
 export type N8nFlujo1Payload = {
   propiedad_id: string
   mensaje: string
+  historial: HistorialItem[]
 }
 
 export type N8nFlujo2Payload = {
