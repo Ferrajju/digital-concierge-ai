@@ -1,15 +1,16 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   inyectarConocimientoFlujo3,
   procesarBorradorFlujo2,
 } from '../../../services/n8nService'
+import { guardarBorradorPropiedad } from '../../../services/propiedadService'
 import {
   WIZARD_INICIAL,
   type WizardValidacionState,
 } from '../types/validacionWizard'
 
-type PasoWizard = 1 | 2 | 3 | 4
+type PasoWizard = 1 | 2
 
 type ValidacionWizardProps = {
   propiedadId: string
@@ -19,8 +20,6 @@ type ValidacionWizardProps = {
 const PASOS = [
   { numero: 1, label: 'Procesado' },
   { numero: 2, label: 'Borrador' },
-  { numero: 3, label: 'Alertas' },
-  { numero: 4, label: 'Guía local' },
 ] as const
 
 const ETAPAS_PROCESADO = [
@@ -40,70 +39,86 @@ export default function ValidacionWizard({
   const navigate = useNavigate()
   const [paso, setPaso] = useState<PasoWizard>(1)
   const [wizard, setWizard] = useState<WizardValidacionState>(WIZARD_INICIAL)
-  const [procesandoBatch, setProcesandoBatch] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
   const [etapaProcesado, setEtapaProcesado] = useState(0)
   const [inyectando, setInyectando] = useState(false)
   const [error, setError] = useState('')
   const abortRef = useRef<AbortController | null>(null)
 
+  const finalizarCargaBorrador = useCallback((borrador: string) => {
+    setWizard((prev) => ({ ...prev, borradorEditado: borrador }))
+    setIsLoading(false)
+    setPaso(2)
+  }, [])
+
+  const ejecutarFlujo2 = useCallback(
+    async (signal: AbortSignal) => {
+      const borrador = await procesarBorradorFlujo2(
+        { propiedad_id: propiedadId },
+        signal,
+      )
+      finalizarCargaBorrador(borrador)
+    },
+    [propiedadId, finalizarCargaBorrador],
+  )
+
   useEffect(() => {
     const controller = new AbortController()
     abortRef.current = controller
 
-    const ejecutarBatch = async () => {
-      try {
-        const borrador = await procesarBorradorFlujo2(
-          { propiedad_id: propiedadId },
-          controller.signal,
-        )
-        setWizard((prev) => ({ ...prev, borradorEditado: borrador }))
-      } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') return
-        setError(
-          err instanceof Error
-            ? err.message
-            : 'No se pudo procesar la conversación.',
-        )
-      } finally {
-        setProcesandoBatch(false)
-      }
-    }
-
-    ejecutarBatch()
+    ejecutarFlujo2(controller.signal).catch((err) => {
+      if (err instanceof Error && err.name === 'AbortError') return
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'No se pudo procesar la conversación.',
+      )
+      setIsLoading(false)
+    })
 
     return () => {
       controller.abort()
     }
-  }, [propiedadId])
+  }, [ejecutarFlujo2])
 
   useEffect(() => {
-    if (!procesandoBatch || paso !== 1) return
+    if (!isLoading || paso !== 1) return
 
     const interval = setInterval(() => {
       setEtapaProcesado((prev) => (prev + 1) % ETAPAS_PROCESADO.length)
     }, 2200)
 
     return () => clearInterval(interval)
-  }, [procesandoBatch, paso])
+  }, [isLoading, paso])
 
   const updateWizard = (updates: Partial<WizardValidacionState>) => {
     setWizard((prev) => ({ ...prev, ...updates }))
   }
 
-  const handleInyectar = async () => {
-    if (inyectando) return
+  const handleReintentar = () => {
+    setError('')
+    setIsLoading(true)
+    setEtapaProcesado(0)
+    setPaso(1)
 
-    if (!wizard.borradorEditado.trim()) {
-      setError('El borrador no puede estar vacío.')
-      setPaso(2)
-      return
-    }
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
 
-    if (wizard.alertas.activas && !wizard.alertas.contacto.trim()) {
-      setError('Introduce un contacto para las alertas de emergencia.')
-      setPaso(3)
-      return
-    }
+    ejecutarFlujo2(controller.signal).catch((err) => {
+      if (err instanceof Error && err.name === 'AbortError') return
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'No se pudo procesar la conversación.',
+      )
+      setIsLoading(false)
+    })
+  }
+
+  const handleSiguienteBorrador = async () => {
+    const textoFinal = wizard.borradorEditado.trim()
+    if (!textoFinal || inyectando) return
 
     setInyectando(true)
     setError('')
@@ -113,10 +128,12 @@ export default function ValidacionWizard({
     abortRef.current = controller
 
     try {
+      await guardarBorradorPropiedad(propiedadId, textoFinal)
+
       await inyectarConocimientoFlujo3(
         {
           propiedad_id: propiedadId,
-          borrador_editado: wizard.borradorEditado,
+          borrador_editado: textoFinal,
           alertas: {
             activas: wizard.alertas.activas,
             canal: wizard.alertas.canal,
@@ -131,13 +148,14 @@ export default function ValidacionWizard({
         },
         controller.signal,
       )
+
       navigate('/')
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return
       setError(
         err instanceof Error
           ? err.message
-          : 'No se pudo inyectar el conocimiento.',
+          : 'No se pudo guardar o indexar el borrador.',
       )
       setInyectando(false)
     }
@@ -153,11 +171,11 @@ export default function ValidacionWizard({
           {nombreVivienda}
         </h1>
         <p className="mt-2 text-sm text-slate-400">
-          Revisa, ajusta y confirma antes de indexar el conocimiento.
+          Revisa, corrige y confirma el borrador antes de indexarlo.
         </p>
       </div>
 
-      <div className="mb-8 flex justify-center gap-2 sm:gap-4">
+      <div className="mb-8 flex justify-center gap-4">
         {PASOS.map(({ numero, label }) => {
           const activo = paso === numero
           const completado = paso > numero
@@ -186,255 +204,41 @@ export default function ValidacionWizard({
         })}
       </div>
 
-      {error && paso !== 1 && (
+      {error && paso === 2 && (
         <div className="mb-6 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
           {error}
         </div>
       )}
 
       <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm sm:p-8">
-        {paso === 1 && (
-          <div className="py-12 text-center">
-            <p className="text-sm text-slate-500">
-              Estamos preparando tu borrador en segundo plano...
-            </p>
-          </div>
-        )}
-
         {paso === 2 && (
-          <div className="space-y-5">
+          <div className="animate-fade-in-up space-y-5">
             <div>
               <h2 className="text-lg font-semibold text-white">
                 Borrador editable
               </h2>
               <p className="mt-1 text-sm text-slate-400">
                 Corrige cualquier dato antes de indexarlo (Wi-Fi, normas,
-                accesos...).
+                accesos...). Al pulsar Siguiente guardaremos tus cambios y
+                lanzaremos la indexación con IA.
               </p>
             </div>
             <textarea
               value={wizard.borradorEditado}
               onChange={(e) => updateWizard({ borradorEditado: e.target.value })}
-              rows={14}
-              className={`resize-y ${inputClassName}`}
+              rows={16}
+              disabled={inyectando}
+              className={`resize-y font-mono text-[13px] leading-relaxed ${inputClassName}`}
               placeholder="El borrador estructurado aparecerá aquí..."
             />
-            <div className="flex justify-between gap-3">
+            <div className="flex justify-end">
               <button
                 type="button"
-                onClick={() => setPaso(1)}
-                className="rounded-xl border border-slate-700 px-5 py-3 text-sm text-slate-400 hover:border-slate-600"
+                onClick={handleSiguienteBorrador}
+                disabled={!wizard.borradorEditado.trim() || inyectando}
+                className="rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all hover:from-indigo-400 hover:to-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                Atrás
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaso(3)}
-                disabled={!wizard.borradorEditado.trim()}
-                className="rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-6 py-3 text-sm font-semibold text-white disabled:opacity-40"
-              >
-                Siguiente
-              </button>
-            </div>
-          </div>
-        )}
-
-        {paso === 3 && (
-          <div className="space-y-5">
-            <div>
-              <h2 className="text-lg font-semibold text-white">
-                Alertas de emergencia
-              </h2>
-              <p className="mt-1 text-sm text-slate-400">
-                Configura cómo recibir incidencias graves (fugas, cortes de luz,
-                llaves perdidas).
-              </p>
-            </div>
-
-            <label className="flex cursor-pointer items-center justify-between rounded-xl border border-slate-800 bg-slate-950/50 px-4 py-4">
-              <span className="text-sm text-slate-300">
-                Activar alertas de emergencia graves
-              </span>
-              <input
-                type="checkbox"
-                checked={wizard.alertas.activas}
-                onChange={(e) =>
-                  updateWizard({
-                    alertas: { ...wizard.alertas, activas: e.target.checked },
-                  })
-                }
-                className="h-5 w-5 rounded border-slate-600 bg-slate-900 text-indigo-500 focus:ring-indigo-500"
-              />
-            </label>
-
-            {wizard.alertas.activas && (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300">
-                    Canal de notificación
-                  </label>
-                  <select
-                    value={wizard.alertas.canal}
-                    onChange={(e) =>
-                      updateWizard({
-                        alertas: {
-                          ...wizard.alertas,
-                          canal: e.target.value as WizardValidacionState['alertas']['canal'],
-                        },
-                      })
-                    }
-                    className={`mt-2 ${inputClassName}`}
-                  >
-                    <option value="telegram">Telegram</option>
-                    <option value="email">Email</option>
-                    <option value="ambos">Ambos</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-300">
-                    Contacto de alertas
-                  </label>
-                  <input
-                    type="text"
-                    value={wizard.alertas.contacto}
-                    onChange={(e) =>
-                      updateWizard({
-                        alertas: { ...wizard.alertas, contacto: e.target.value },
-                      })
-                    }
-                    placeholder="@usuario, email o Chat ID"
-                    className={`mt-2 ${inputClassName}`}
-                  />
-                </div>
-              </div>
-            )}
-
-            <div className="flex justify-between gap-3">
-              <button
-                type="button"
-                onClick={() => setPaso(2)}
-                className="rounded-xl border border-slate-700 px-5 py-3 text-sm text-slate-400"
-              >
-                Atrás
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaso(4)}
-                className="rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-6 py-3 text-sm font-semibold text-white"
-              >
-                Siguiente
-              </button>
-            </div>
-          </div>
-        )}
-
-        {paso === 4 && (
-          <div className="space-y-5">
-            <div>
-              <h2 className="text-lg font-semibold text-white">
-                Asistente de recomendaciones
-              </h2>
-              <p className="mt-1 text-sm text-slate-400">
-                Tu IA podrá sugerir lugares locales a los huéspedes.
-              </p>
-            </div>
-
-            <label className="flex cursor-pointer items-center justify-between rounded-xl border border-slate-800 bg-slate-950/50 px-4 py-4">
-              <span className="text-sm text-slate-300">
-                ¿Quieres que tu IA recomiende lugares locales?
-              </span>
-              <input
-                type="checkbox"
-                checked={wizard.recomendaciones.activo}
-                onChange={(e) =>
-                  updateWizard({
-                    recomendaciones: {
-                      ...wizard.recomendaciones,
-                      activo: e.target.checked,
-                    },
-                  })
-                }
-                className="h-5 w-5 rounded border-slate-600 bg-slate-900 text-indigo-500"
-              />
-            </label>
-
-            {wizard.recomendaciones.activo && (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300">
-                    Restaurantes recomendados
-                  </label>
-                  <textarea
-                    value={wizard.recomendaciones.restaurantes}
-                    onChange={(e) =>
-                      updateWizard({
-                        recomendaciones: {
-                          ...wizard.recomendaciones,
-                          restaurantes: e.target.value,
-                        },
-                      })
-                    }
-                    rows={2}
-                    placeholder="Ej: La Mar Salada, Can Paixano..."
-                    className={`mt-2 resize-none ${inputClassName}`}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-300">
-                    Transporte cercano
-                  </label>
-                  <textarea
-                    value={wizard.recomendaciones.transporte}
-                    onChange={(e) =>
-                      updateWizard({
-                        recomendaciones: {
-                          ...wizard.recomendaciones,
-                          transporte: e.target.value,
-                        },
-                      })
-                    }
-                    rows={2}
-                    placeholder="Ej: Metro L4, parada bus 24..."
-                    className={`mt-2 resize-none ${inputClassName}`}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-300">
-                    Lugares de interés
-                  </label>
-                  <textarea
-                    value={wizard.recomendaciones.lugaresInteres}
-                    onChange={(e) =>
-                      updateWizard({
-                        recomendaciones: {
-                          ...wizard.recomendaciones,
-                          lugaresInteres: e.target.value,
-                        },
-                      })
-                    }
-                    rows={2}
-                    placeholder="Ej: Playa de la Barceloneta, Park Güell..."
-                    className={`mt-2 resize-none ${inputClassName}`}
-                  />
-                </div>
-              </div>
-            )}
-
-            <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:justify-between">
-              <button
-                type="button"
-                onClick={() => setPaso(3)}
-                className="rounded-xl border border-slate-700 px-5 py-3 text-sm text-slate-400"
-              >
-                Atrás
-              </button>
-              <button
-                type="button"
-                onClick={handleInyectar}
-                disabled={inyectando}
-                className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-6 py-4 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition-all hover:from-indigo-400 hover:to-violet-500 disabled:opacity-50"
-              >
-                🚀 Estudiar e Inyectar Información con IA
+                Siguiente → Indexar con IA
               </button>
             </div>
           </div>
@@ -450,7 +254,7 @@ export default function ValidacionWizard({
             </div>
 
             <div className="relative text-center">
-              {procesandoBatch ? (
+              {isLoading ? (
                 <>
                   <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-indigo-500/15 ring-1 ring-indigo-500/30">
                     <div className="h-12 w-12 animate-spin rounded-full border-[3px] border-indigo-500/20 border-t-indigo-400" />
@@ -460,7 +264,7 @@ export default function ValidacionWizard({
                   </h2>
                   <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-slate-400">
                     Estamos procesando y estructurando toda la información de tu
-                    alojamiento. Esto puede tardar unos segundos.
+                    alojamiento.
                   </p>
 
                   <div className="relative mx-auto mt-8 h-1.5 max-w-xs overflow-hidden rounded-full bg-slate-800">
@@ -487,7 +291,7 @@ export default function ValidacionWizard({
                     ))}
                   </div>
                 </>
-              ) : error ? (
+              ) : (
                 <>
                   <div className="mx-auto mb-6 flex h-20 w-20 animate-scale-in items-center justify-center rounded-full bg-rose-500/15 text-3xl ring-1 ring-rose-500/40">
                     !
@@ -500,59 +304,10 @@ export default function ValidacionWizard({
                   </p>
                   <button
                     type="button"
-                    onClick={() => {
-                      setError('')
-                      setProcesandoBatch(true)
-                      setEtapaProcesado(0)
-                      abortRef.current?.abort()
-                      const controller = new AbortController()
-                      abortRef.current = controller
-                      procesarBorradorFlujo2(
-                        { propiedad_id: propiedadId },
-                        controller.signal,
-                      )
-                        .then((borrador) => {
-                          setWizard((prev) => ({
-                            ...prev,
-                            borradorEditado: borrador,
-                          }))
-                          setProcesandoBatch(false)
-                        })
-                        .catch((err) => {
-                          if (err instanceof Error && err.name === 'AbortError')
-                            return
-                          setError(
-                            err instanceof Error
-                              ? err.message
-                              : 'No se pudo procesar la conversación.',
-                          )
-                          setProcesandoBatch(false)
-                        })
-                    }}
+                    onClick={handleReintentar}
                     className="mt-8 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-8 py-3.5 text-sm font-semibold text-white"
                   >
                     Reintentar procesamiento
-                  </button>
-                </>
-              ) : (
-                <>
-                  <div className="mx-auto mb-6 flex h-20 w-20 animate-scale-in items-center justify-center rounded-full bg-emerald-500/20 text-4xl ring-1 ring-emerald-500/40">
-                    ✓
-                  </div>
-                  <h2 className="text-xl font-semibold text-white sm:text-2xl">
-                    ¡Borrador listo!
-                  </h2>
-                  <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-slate-400">
-                    Hemos organizado toda tu información. Ahora puedes revisarla
-                    y corregir cualquier detalle antes de continuar.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setPaso(2)}
-                    disabled={!wizard.borradorEditado.trim()}
-                    className="mt-8 animate-pulse-soft rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-8 py-4 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition-all hover:from-indigo-400 hover:to-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Revisar borrador →
                   </button>
                 </>
               )}
@@ -566,8 +321,7 @@ export default function ValidacionWizard({
           <div className="mx-6 w-full max-w-lg rounded-2xl border border-slate-800 bg-slate-900/90 p-8 text-center shadow-2xl">
             <div className="mx-auto mb-6 h-14 w-14 animate-spin rounded-full border-[3px] border-indigo-500/20 border-t-indigo-400" />
             <p className="text-lg font-semibold leading-relaxed text-white">
-              La IA está leyendo tus textos y generando mapas vectoriales de
-              conocimiento en la base de datos...
+              Guardando tus correcciones e indexando el conocimiento con IA...
             </p>
           </div>
         </div>

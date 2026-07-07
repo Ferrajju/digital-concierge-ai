@@ -5,7 +5,6 @@ import type {
   N8nFlujo3Payload,
 } from '../pages/propietario/types/propiedadChat'
 import {
-  guardarBorradorPropiedad,
   obtenerBorradorPropiedad,
 } from './propiedadService'
 
@@ -207,8 +206,6 @@ export async function procesarBorradorFlujo2(
       'El Flujo 2 no devolvió borrador. Comprueba que n8n responda con { "borrador": "..." } o guarde el texto en propiedades.borrador_texto.',
     )
   }
-
-  await guardarBorradorPropiedad(payload.propiedad_id, borrador)
 
   return borrador
 }
