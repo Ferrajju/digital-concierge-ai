@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import GuestWelcomePage from './pages/huesped/GuestWelcomePage'
+import GuestChatPage from './pages/huesped/GuestChatPage'
 import WelcomePage from './pages/huesped/WelcomePage'
 import AuthPage from './pages/propietario/AuthPage'
 import ChatsPropiedadPage from './pages/propietario/ChatsPropiedadPage'
@@ -21,7 +21,7 @@ function App() {
           path="/crear-propiedad"
           element={<Navigate to="/configurar-vivienda" replace />}
         />
-        <Route path="/guest/:propiedadId" element={<GuestWelcomePage />} />
+        <Route path="/guest/:propiedadId" element={<GuestChatPage />} />
         <Route
           path="/propiedad/:propiedadId/gestionar"
           element={<GestionarPropiedadPage />}

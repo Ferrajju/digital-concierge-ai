@@ -1,4 +1,8 @@
 import type {
+  N8nFlujo4Payload,
+  N8nFlujo4Response,
+} from '../pages/huesped/types/guestChat'
+import type {
   N8nFlujo1Payload,
   N8nFlujo1Response,
   N8nFlujo2Payload,
@@ -16,6 +20,7 @@ import {
 const FLUJO1_URL = import.meta.env.VITE_N8N_FLUJO1_WEBHOOK_URL
 const FLUJO2_URL = import.meta.env.VITE_N8N_FLUJO2_WEBHOOK_URL
 const FLUJO3_URL = import.meta.env.VITE_N8N_FLUJO3_WEBHOOK_URL
+const FLUJO4_URL = import.meta.env.VITE_N8N_FLUJO4_WEBHOOK_URL
 const GUIA_LOCAL_URL = import.meta.env.VITE_N8N_GUIA_LOCAL_WEBHOOK_URL
 
 function assertWebhookUrl(url: string | undefined, flujo: string): asserts url is string {
@@ -310,4 +315,43 @@ export async function generarTarjetasGuiaLocalN8n(
 
   const raw = await parseResponseJson(response)
   return parseTarjetasGuiaLocal(raw)
+}
+
+function parseFlujo4Response(data: unknown): N8nFlujo4Response {
+  const record = unwrapRecord(data)
+  const respuesta = record.respuesta
+
+  if (typeof respuesta !== 'string' || !respuesta.trim()) {
+    throw new Error(
+      'La respuesta de n8n no incluye el campo "respuesta" válido.',
+    )
+  }
+
+  return { respuesta: respuesta.trim() }
+}
+
+export async function enviarMensajeFlujo4(
+  payload: N8nFlujo4Payload,
+  signal?: AbortSignal,
+): Promise<N8nFlujo4Response> {
+  const placeholders = ['TU_URL_WEBHOOK_FLUJO4_AQUI']
+  if (!FLUJO4_URL || placeholders.includes(FLUJO4_URL)) {
+    return {
+      respuesta:
+        'Gracias por tu mensaje. En breve el conserje digital estará conectado para ayudarte con tu estancia.',
+    }
+  }
+
+  const response = await fetch(FLUJO4_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    signal,
+  })
+
+  if (!response.ok) {
+    throw new Error(`n8n Flujo 4 respondió con error ${response.status}.`)
+  }
+
+  return parseFlujo4Response(await parseResponseJson(response))
 }
