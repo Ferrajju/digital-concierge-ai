@@ -128,13 +128,26 @@ export default function GuestChatPage() {
     abortRef.current = controller
 
     try {
-      await persistirMensajes(conUsuario)
+      try {
+        await persistirMensajes(conUsuario)
+      } catch (persistErr) {
+        console.warn(
+          '[GuestChat] No se pudo guardar antes de n8n (continúa Flujo 4):',
+          persistErr,
+        )
+      }
+
+      const historialParaN8n = conUsuario.map(({ rol, contenido }) => ({
+        rol,
+        contenido,
+      }))
 
       const data = await enviarMensajeFlujo4(
         {
           propiedad_id: propiedadId,
           session_id: sessionId,
           mensaje: texto,
+          historial: historialParaN8n,
         },
         controller.signal,
       )
@@ -147,7 +160,11 @@ export default function GuestChatPage() {
 
       const conRespuesta = [...conUsuario, mensajeAsistente]
       setMensajes(conRespuesta)
-      await persistirMensajes(conRespuesta)
+      try {
+        await persistirMensajes(conRespuesta)
+      } catch (persistErr) {
+        console.warn('[GuestChat] No se pudo guardar respuesta:', persistErr)
+      }
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return
 

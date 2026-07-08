@@ -334,13 +334,21 @@ export async function enviarMensajeFlujo4(
   payload: N8nFlujo4Payload,
   signal?: AbortSignal,
 ): Promise<N8nFlujo4Response> {
-  const placeholders = ['TU_URL_WEBHOOK_FLUJO4_AQUI']
+  const placeholders = ['TU_URL_WEBHOOK_FLUJO4_AQUI', '']
+
+  console.log('[Flujo4] URL configurada:', FLUJO4_URL ? 'sí' : 'NO')
+  console.log('[Flujo4] Payload:', payload)
+
   if (!FLUJO4_URL || placeholders.includes(FLUJO4_URL)) {
-    return {
-      respuesta:
-        'Gracias por tu mensaje. En breve el conserje digital estará conectado para ayudarte con tu estancia.',
-    }
+    console.error(
+      '[Flujo4] Webhook NO llamado — falta VITE_N8N_FLUJO4_WEBHOOK_URL en .env o Vercel.',
+    )
+    throw new Error(
+      'Flujo 4 no configurado. Añade VITE_N8N_FLUJO4_WEBHOOK_URL y reinicia el servidor.',
+    )
   }
+
+  console.log('[Flujo4] Llamando webhook:', FLUJO4_URL)
 
   const response = await fetch(FLUJO4_URL, {
     method: 'POST',
@@ -349,8 +357,15 @@ export async function enviarMensajeFlujo4(
     signal,
   })
 
+  console.log('[Flujo4] Respuesta HTTP status:', response.status)
+
   if (!response.ok) {
-    throw new Error(`n8n Flujo 4 respondió con error ${response.status}.`)
+    const detalle = response.status === 404
+      ? ' El webhook no acepta POST — configura el nodo Webhook de n8n en método POST.'
+      : ''
+    throw new Error(
+      `n8n Flujo 4 respondió con error ${response.status}.${detalle}`,
+    )
   }
 
   return parseFlujo4Response(await parseResponseJson(response))

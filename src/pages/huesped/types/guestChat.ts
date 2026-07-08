@@ -15,6 +15,7 @@ export type N8nFlujo4Payload = {
   propiedad_id: string
   session_id: string
   mensaje: string
+  historial: { rol: 'user' | 'assistant'; contenido: string }[]
 }
 
 export type N8nFlujo4Response = {
