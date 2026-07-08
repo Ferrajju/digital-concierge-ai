@@ -4,6 +4,9 @@ import type {
 } from '../pages/huesped/types/guestChat'
 import { supabase } from './supabaseClient'
 
+const COLUMNAS_PUBLICAS =
+  'id, nombre_apartamento, direccion_calle, piso_puerta, codigo_postal, ia_identidad'
+
 function formatearDireccion(
   calle: string | null,
   piso: string | null,
@@ -16,26 +19,38 @@ function formatearDireccion(
 export async function obtenerPropiedadGuest(
   propiedadId: string,
 ): Promise<PropiedadGuestInfo> {
-  const { data, error } = await supabase.rpc('obtener_propiedad_guest', {
-    p_propiedad_id: propiedadId,
-  })
+  console.log('[GuestChat] obtenerPropiedadGuest — propiedad_id:', propiedadId)
 
-  if (error) throw error
+  const { data, error } = await supabase
+    .from('propiedades')
+    .select(COLUMNAS_PUBLICAS)
+    .eq('id', propiedadId)
+    .maybeSingle()
 
-  const fila = Array.isArray(data) ? data[0] : data
-  if (!fila) {
-    throw new Error('No se encontró esta propiedad o el enlace no es válido.')
+  console.log('[GuestChat] Supabase propiedades — data:', data)
+  console.log('[GuestChat] Supabase propiedades — error:', error)
+
+  if (error) {
+    throw new Error(
+      error.message || 'Error al consultar la propiedad en Supabase.',
+    )
+  }
+
+  if (!data) {
+    throw new Error(
+      'No se encontró esta propiedad. Comprueba que el enlace QR sea correcto.',
+    )
   }
 
   return {
-    id: fila.id,
-    nombreApartamento: fila.nombre_apartamento ?? 'Tu alojamiento',
+    id: data.id,
+    nombreApartamento: data.nombre_apartamento ?? 'Tu alojamiento',
     direccionCompleta: formatearDireccion(
-      fila.direccion_calle,
-      fila.piso_puerta,
-      fila.codigo_postal,
+      data.direccion_calle,
+      data.piso_puerta,
+      data.codigo_postal,
     ),
-    iaIdentidad: fila.ia_identidad ?? 'Conserje',
+    iaIdentidad: data.ia_identidad ?? 'Conserje',
   }
 }
 
@@ -50,7 +65,9 @@ function parseHistorial(raw: unknown): MensajeHuespedChat[] {
       const contenido =
         typeof msg.contenido === 'string' ? msg.contenido.trim() : ''
       const timestamp =
-        typeof msg.timestamp === 'string' ? msg.timestamp : new Date().toISOString()
+        typeof msg.timestamp === 'string'
+          ? msg.timestamp
+          : new Date().toISOString()
 
       if (!rol || !contenido) return null
       return { rol, contenido, timestamp }
@@ -62,12 +79,18 @@ export async function cargarHistorialHuesped(
   propiedadId: string,
   sessionId: string,
 ): Promise<MensajeHuespedChat[]> {
+  console.log('[GuestChat] cargarHistorial — propiedad_id:', propiedadId)
+  console.log('[GuestChat] cargarHistorial — session_id:', sessionId)
+
   const { data, error } = await supabase
     .from('conversaciones_huesped')
     .select('historial_mensajes')
     .eq('propiedad_id', propiedadId)
     .eq('session_id', sessionId)
     .maybeSingle()
+
+  console.log('[GuestChat] Supabase conversaciones_huesped — data:', data)
+  console.log('[GuestChat] Supabase conversaciones_huesped — error:', error)
 
   if (error) throw error
   if (!data?.historial_mensajes) return []

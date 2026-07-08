@@ -35,7 +35,10 @@ export default function GuestChatPage() {
   const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
+    console.log('[GuestChat] useEffect — propiedadId (params):', propiedadId)
+
     if (!propiedadId) {
+      console.warn('[GuestChat] propiedadId undefined — enlace inválido')
       setError('Enlace no válido.')
       setCargando(false)
       return
@@ -46,8 +49,19 @@ export default function GuestChatPage() {
     const iniciar = async () => {
       try {
         const sid = obtenerSessionIdHuesped(propiedadId)
+        console.log('[GuestChat] session_id generado/recuperado:', sid)
+
         const info = await obtenerPropiedadGuest(propiedadId)
-        const historial = await cargarHistorialHuesped(propiedadId, sid)
+
+        let historial: MensajeHuespedChat[] = []
+        try {
+          historial = await cargarHistorialHuesped(propiedadId, sid)
+        } catch (historialErr) {
+          console.warn(
+            '[GuestChat] No se pudo cargar historial (no bloquea el chat):',
+            historialErr,
+          )
+        }
 
         if (!activo) return
 
@@ -61,11 +75,14 @@ export default function GuestChatPage() {
         }
       } catch (err) {
         if (!activo) return
-        setError(
+        console.error('[GuestChat] Error al iniciar chat:', err)
+        const mensaje =
           err instanceof Error
             ? err.message
-            : 'No se pudo cargar el chat del huésped.',
-        )
+            : typeof err === 'object' && err !== null && 'message' in err
+              ? String((err as { message: unknown }).message)
+              : 'No se pudo cargar el chat del huésped.'
+        setError(mensaje)
       } finally {
         if (activo) setCargando(false)
       }
