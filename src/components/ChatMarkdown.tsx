@@ -9,7 +9,12 @@ function normalizarMarkdownAsistente(texto: string): string {
     .trim()
 }
 
-const markdownComponents: Components = {
+type ChatMarkdownProps = {
+  contenido: string
+  variant?: 'dark' | 'light'
+}
+
+const markdownComponentsDark: Components = {
   p: ({ children }) => (
     <p className="mb-2 whitespace-pre-wrap last:mb-0">{children}</p>
   ),
@@ -36,13 +41,42 @@ const markdownComponents: Components = {
   ),
 }
 
-type ChatMarkdownProps = {
-  contenido: string
+const markdownComponentsLight: Components = {
+  p: ({ children }) => (
+    <p className="mb-2 whitespace-pre-wrap last:mb-0">{children}</p>
+  ),
+  strong: ({ children }) => (
+    <strong className="font-semibold text-host-text">{children}</strong>
+  ),
+  em: ({ children }) => <em className="italic text-stone-600">{children}</em>,
+  ul: ({ children }) => (
+    <ul className="mb-2 list-disc space-y-1.5 pl-5 last:mb-0">{children}</ul>
+  ),
+  ol: ({ children }) => (
+    <ol className="mb-2 list-decimal space-y-1.5 pl-5 last:mb-0">{children}</ol>
+  ),
+  li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+  a: ({ href, children }) => (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="font-medium text-host-primary underline underline-offset-2 hover:text-teal-800"
+    >
+      {children}
+    </a>
+  ),
 }
 
-export default function ChatMarkdown({ contenido }: ChatMarkdownProps) {
+export default function ChatMarkdown({
+  contenido,
+  variant = 'dark',
+}: ChatMarkdownProps) {
+  const components =
+    variant === 'light' ? markdownComponentsLight : markdownComponentsDark
+
   return (
-    <ReactMarkdown components={markdownComponents}>
+    <ReactMarkdown components={components}>
       {normalizarMarkdownAsistente(contenido)}
     </ReactMarkdown>
   )

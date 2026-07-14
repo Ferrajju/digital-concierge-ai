@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import LocationSearch from '../../../components/LocationSearch'
+import Button from '../../../components/ui/Button'
+import Card from '../../../components/ui/Card'
+import HostFeedback from '../../../components/ui/HostFeedback'
+import HostModal from '../../../components/ui/HostModal'
+import { HostSubpageHeader } from '../../../components/ui/HostPageShell'
+import { HostLoading } from '../../../components/ui/HostShell'
+import {
+  inputClassName,
+  labelClassName,
+} from '../../../components/ui/inputClassName'
 import { reprocesarGuiaLocalPorUbicacion } from '../../../services/conocimientoService'
 import {
   actualizarConfiguracionPropiedad,
@@ -16,9 +26,6 @@ import {
   type ConfigPropiedadGuardada,
   type PersonalidadAgenteId,
 } from '../types/configPropiedad'
-
-const inputClassName =
-  'w-full rounded-xl border border-slate-700 bg-slate-950/80 px-4 py-3 text-sm text-white placeholder:text-slate-600 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50'
 
 type ConfigPropiedadPanelProps = {
   propiedadId: string
@@ -193,8 +200,7 @@ export default function ConfigPropiedadPanel({
       return
     }
 
-    const cambioUbicacion = ubicacionCambioAfectaGuia(original, form)
-    if (cambioUbicacion) {
+    if (ubicacionCambioAfectaGuia(original, form)) {
       setMostrarAvisoUbicacion(true)
       return
     }
@@ -220,45 +226,29 @@ export default function ConfigPropiedadPanel({
   }
 
   if (cargando || !form) {
-    return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-indigo-500/20 border-t-indigo-400" />
-      </div>
-    )
+    return <HostLoading label="Cargando configuración..." />
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <button
-          type="button"
-          onClick={onVolver}
-          disabled={guardando}
-          className="text-sm text-slate-500 transition-colors hover:text-indigo-300 disabled:opacity-40"
-        >
-          ← Volver al hub
-        </button>
-      </div>
+      <HostSubpageHeader
+        onBack={onVolver}
+        backLabel="Volver al hub"
+        title="Agente y alojamiento"
+        description="Nombre y personalidad del conserje, datos del apartamento y ubicación."
+      />
 
-      <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 sm:p-6">
-        <div className="mb-6 flex items-start gap-3">
-          <span className="text-2xl" aria-hidden>
-            🤖
-          </span>
-          <div>
-            <h2 className="text-lg font-semibold text-white">Agente IA</h2>
-            <p className="mt-1 text-sm text-slate-400">
-              Nombre y personalidad que verán los huéspedes al chatear.
-            </p>
-          </div>
-        </div>
+      <Card padding="lg">
+        <h3 className="font-display text-lg font-semibold text-host-text">
+          Agente IA
+        </h3>
+        <p className="mt-1 text-sm text-host-muted">
+          Nombre y personalidad que verán los huéspedes al chatear.
+        </p>
 
-        <div className="space-y-5">
+        <div className="mt-6 space-y-5">
           <div>
-            <label
-              htmlFor="nombre-agente"
-              className="block text-sm font-medium text-slate-300"
-            >
+            <label htmlFor="nombre-agente" className={labelClassName}>
               Nombre del agente
             </label>
             <input
@@ -273,12 +263,9 @@ export default function ConfigPropiedadPanel({
           </div>
 
           <div>
-            <p className="text-sm font-medium text-slate-300">
-              Personalidad del conserje
-            </p>
-            <p className="mt-1 text-xs text-slate-500">
-              Elige el tono que mejor encaje con tu tipo de alojamiento y
-              propietario.
+            <p className={labelClassName}>Personalidad del conserje</p>
+            <p className="mt-1 text-xs text-host-muted">
+              Elige el tono que mejor encaje con tu tipo de alojamiento.
             </p>
 
             <div className="mt-4 grid gap-3 lg:grid-cols-3">
@@ -293,8 +280,8 @@ export default function ConfigPropiedadPanel({
                     onClick={() => seleccionarPersonalidad(personalidad.id)}
                     className={`rounded-2xl border p-4 text-left transition-all disabled:opacity-60 ${
                       seleccionada
-                        ? 'border-indigo-500/60 bg-indigo-500/10 shadow-lg shadow-indigo-500/10 ring-1 ring-indigo-500/40'
-                        : 'border-slate-800 bg-slate-950/40 hover:border-slate-700 hover:bg-slate-900/60'
+                        ? 'border-host-primary bg-teal-50 shadow-sm ring-1 ring-teal-200'
+                        : 'border-host-border bg-host-surface hover:border-stone-300 hover:bg-stone-50'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -302,22 +289,19 @@ export default function ConfigPropiedadPanel({
                         {personalidad.icono}
                       </span>
                       {seleccionada && (
-                        <span className="rounded-full bg-indigo-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-indigo-300">
+                        <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-teal-800">
                           Activa
                         </span>
                       )}
                     </div>
-                    <h3 className="mt-3 text-sm font-semibold text-white">
+                    <h4 className="mt-3 text-sm font-semibold text-host-text">
                       {personalidad.titulo}
-                    </h3>
-                    <p className="mt-1 text-xs font-medium text-indigo-300/90">
+                    </h4>
+                    <p className="mt-1 text-xs font-medium text-host-primary">
                       {personalidad.subtitulo}
                     </p>
-                    <p className="mt-2 text-xs leading-relaxed text-slate-400">
+                    <p className="mt-2 text-xs leading-relaxed text-host-muted">
                       {personalidad.descripcion}
-                    </p>
-                    <p className="mt-3 text-[11px] text-slate-500">
-                      {personalidad.perfilPropietario}
                     </p>
                   </button>
                 )
@@ -325,28 +309,19 @@ export default function ConfigPropiedadPanel({
             </div>
           </div>
         </div>
-      </section>
+      </Card>
 
-      <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 sm:p-6">
-        <div className="mb-6 flex items-start gap-3">
-          <span className="text-2xl" aria-hidden>
-            🏠
-          </span>
-          <div>
-            <h2 className="text-lg font-semibold text-white">Alojamiento</h2>
-            <p className="mt-1 text-sm text-slate-400">
-              Nombre visible y ubicación de referencia para huéspedes y guía
-              local.
-            </p>
-          </div>
-        </div>
+      <Card padding="lg">
+        <h3 className="font-display text-lg font-semibold text-host-text">
+          Alojamiento
+        </h3>
+        <p className="mt-1 text-sm text-host-muted">
+          Nombre visible y ubicación de referencia para huéspedes y guía local.
+        </p>
 
-        <div className="space-y-4">
+        <div className="mt-6 space-y-4">
           <div>
-            <label
-              htmlFor="nombre-apartamento"
-              className="block text-sm font-medium text-slate-300"
-            >
+            <label htmlFor="nombre-apartamento" className={labelClassName}>
               Nombre del apartamento
             </label>
             <input
@@ -357,17 +332,16 @@ export default function ConfigPropiedadPanel({
                 updateForm({ nombreApartamento: e.target.value })
               }
               disabled={guardando}
-              placeholder="Ej: Apartamento 5"
               className={`mt-2 ${inputClassName}`}
             />
           </div>
 
           {apiKeyConfigured && (
-            <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-indigo-300">
+            <div className="rounded-2xl border border-teal-100 bg-teal-50/50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-host-primary">
                 Buscador rápido
               </p>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-host-muted">
                 Selecciona la dirección en Google Maps para autorrellenar.
               </p>
               <div className="mt-3">
@@ -379,19 +353,16 @@ export default function ConfigPropiedadPanel({
                 />
               </div>
               {loadError && (
-                <p className="mt-2 text-xs text-rose-300">
+                <HostFeedback className="mt-2">
                   No se pudo cargar Google Maps: {loadError.message}
-                </p>
+                </HostFeedback>
               )}
             </div>
           )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <label
-                htmlFor="config-direccion-calle"
-                className="block text-sm font-medium text-slate-300"
-              >
+              <label htmlFor="config-direccion-calle" className={labelClassName}>
                 Calle y número
               </label>
               <input
@@ -405,12 +376,8 @@ export default function ConfigPropiedadPanel({
                 className={`mt-2 ${inputClassName}`}
               />
             </div>
-
             <div>
-              <label
-                htmlFor="config-piso"
-                className="block text-sm font-medium text-slate-300"
-              >
+              <label htmlFor="config-piso" className={labelClassName}>
                 Piso, puerta o bloque
               </label>
               <input
@@ -422,12 +389,8 @@ export default function ConfigPropiedadPanel({
                 className={`mt-2 ${inputClassName}`}
               />
             </div>
-
             <div>
-              <label
-                htmlFor="config-cp"
-                className="block text-sm font-medium text-slate-300"
-              >
+              <label htmlFor="config-cp" className={labelClassName}>
                 Código postal
               </label>
               <input
@@ -439,12 +402,8 @@ export default function ConfigPropiedadPanel({
                 className={`mt-2 ${inputClassName}`}
               />
             </div>
-
             <div className="sm:col-span-2">
-              <label
-                htmlFor="config-ciudad"
-                className="block text-sm font-medium text-slate-300"
-              >
+              <label htmlFor="config-ciudad" className={labelClassName}>
                 Ciudad / región
               </label>
               <input
@@ -456,12 +415,8 @@ export default function ConfigPropiedadPanel({
                 className={`mt-2 ${inputClassName}`}
               />
             </div>
-
             <div className="sm:col-span-2">
-              <label
-                htmlFor="config-indicaciones"
-                className="block text-sm font-medium text-slate-300"
-              >
+              <label htmlFor="config-indicaciones" className={labelClassName}>
                 Indicaciones de acceso
               </label>
               <textarea
@@ -478,93 +433,52 @@ export default function ConfigPropiedadPanel({
           </div>
 
           {cambioUbicacionPendiente && (
-            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+            <HostFeedback variant="warning">
               Has modificado la ubicación. Al guardar se eliminarán las
-              recomendaciones locales actuales y se generará una guía nueva
-              según la dirección actualizada.
-            </div>
+              recomendaciones locales actuales y se generará una guía nueva.
+            </HostFeedback>
           )}
         </div>
-      </section>
+      </Card>
 
-      {error && (
-        <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-          {error}
-        </div>
-      )}
-
-      {mensajeOk && (
-        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
-          {mensajeOk}
-        </div>
-      )}
+      {error && <HostFeedback>{error}</HostFeedback>}
+      {mensajeOk && <HostFeedback variant="success">{mensajeOk}</HostFeedback>}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-        <button
+        <Button
           type="button"
+          variant="secondary"
           onClick={onVolver}
           disabled={guardando}
-          className="rounded-xl border border-slate-700 px-5 py-3 text-sm text-slate-400 transition-colors hover:border-slate-600 disabled:opacity-40"
         >
           Cancelar
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           onClick={handleGuardar}
+          loading={guardando}
           disabled={guardando}
-          className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all hover:from-indigo-400 hover:to-violet-500 disabled:cursor-not-allowed disabled:opacity-60"
+          size="lg"
         >
-          {guardando ? (
-            <>
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-              Guardando...
-            </>
-          ) : (
-            'Guardar cambios'
-          )}
-        </button>
+          Guardar cambios
+        </Button>
       </div>
 
       {mostrarAvisoUbicacion && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="aviso-ubicacion-titulo"
+        <HostModal
+          title="Reprocesar guía local"
+          onClose={() => setMostrarAvisoUbicacion(false)}
+          confirmLabel={
+            guardando ? 'Reprocesando...' : 'Confirmar y reprocesar'
+          }
+          onConfirm={() => void ejecutarGuardado(true)}
+          confirmLoading={guardando}
+          confirmVariant="warning"
         >
-          <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
-            <h3
-              id="aviso-ubicacion-titulo"
-              className="text-lg font-semibold text-white"
-            >
-              Reprocesar guía local
-            </h3>
-            <p className="mt-3 text-sm leading-relaxed text-slate-400">
-              Al cambiar calle, código postal, piso o ciudad se volverá a
-              generar la guía de recomendaciones desde cero. Se eliminarán las
-              tarjetas actuales y se buscarán lugares cercanos a la nueva
-              ubicación, igual que en la configuración inicial.
-            </p>
-            <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={() => setMostrarAvisoUbicacion(false)}
-                disabled={guardando}
-                className="rounded-xl border border-slate-700 px-4 py-2.5 text-sm text-slate-400 transition-colors hover:border-slate-600 disabled:opacity-40"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={() => void ejecutarGuardado(true)}
-                disabled={guardando}
-                className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:from-amber-400 hover:to-orange-500 disabled:opacity-60"
-              >
-                {guardando ? 'Reprocesando...' : 'Confirmar y reprocesar'}
-              </button>
-            </div>
-          </div>
-        </div>
+          Al cambiar calle, código postal, piso o ciudad se volverá a generar la
+          guía de recomendaciones desde cero. Se eliminarán las tarjetas
+          actuales y se buscarán lugares cercanos a la nueva ubicación.
+        </HostModal>
       )}
     </div>
   )

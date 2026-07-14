@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import ChatMarkdown from '../../components/ChatMarkdown'
+import Card from '../../components/ui/Card'
+import EmptyState from '../../components/ui/EmptyState'
+import HostFeedback from '../../components/ui/HostFeedback'
+import HostPageShell from '../../components/ui/HostPageShell'
+import { IconMessages } from '../../components/ui/icons'
+import { HostLoading } from '../../components/ui/HostShell'
 import { listarConversacionesPropiedad } from '../../services/huespedService'
 import {
   obtenerPropiedadBasicaPropietario,
@@ -81,26 +87,26 @@ function DetalleConversacion({
   onVolver,
 }: DetalleConversacionProps) {
   return (
-    <div className="flex h-full flex-col">
-      <div className="border-b border-slate-800 px-4 py-4 sm:px-6">
+    <div className="flex h-full flex-col bg-stone-50/50">
+      <div className="border-b border-host-border bg-host-surface px-4 py-4 sm:px-6">
         <div className="flex items-start gap-3">
           {onVolver && (
             <button
               type="button"
               onClick={onVolver}
-              className="mt-0.5 rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 lg:hidden"
+              className="mt-0.5 rounded-lg border border-host-border bg-host-surface px-3 py-1.5 text-sm font-medium text-host-muted lg:hidden"
             >
               ← Volver
             </button>
           )}
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-white">
+            <p className="text-sm font-semibold text-host-text">
               Sesión {acortarSessionId(conversacion.sessionId)}
             </p>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-host-muted">
               {formatearFechaCompleta(conversacion.updatedAt)}
             </p>
-            <p className="mt-2 text-xs text-slate-400">
+            <p className="mt-2 text-xs text-host-muted">
               {conversacion.totalMensajes} mensajes ·{' '}
               {conversacion.mensajesUsuario} del huésped
             </p>
@@ -111,7 +117,7 @@ function DetalleConversacion({
       <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6">
         <div className="mx-auto flex max-w-2xl flex-col gap-3">
           {conversacion.mensajes.length === 0 ? (
-            <p className="text-center text-sm text-slate-500">
+            <p className="text-center text-sm text-host-muted">
               Esta sesión no tiene mensajes guardados.
             </p>
           ) : (
@@ -124,14 +130,14 @@ function DetalleConversacion({
                 >
                   <div className="max-w-[90%]">
                     <div
-                      className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                      className={`rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${
                         esUsuario
-                          ? 'rounded-br-md bg-indigo-600 text-white'
-                          : 'rounded-bl-md bg-slate-800 text-slate-100'
+                          ? 'rounded-br-md bg-host-primary text-white'
+                          : 'rounded-bl-md border border-host-border bg-host-surface text-host-text'
                       }`}
                     >
                       {!esUsuario && (
-                        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-indigo-300/80">
+                        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-host-primary">
                           {nombreAgente}
                         </p>
                       )}
@@ -140,11 +146,11 @@ function DetalleConversacion({
                           {mensaje.contenido}
                         </p>
                       ) : (
-                        <ChatMarkdown contenido={mensaje.contenido} />
+                        <ChatMarkdown contenido={mensaje.contenido} variant="light" />
                       )}
                     </div>
                     <p
-                      className={`mt-1 px-1 text-[10px] text-slate-600 ${
+                      className={`mt-1 px-1 text-[10px] text-stone-400 ${
                         esUsuario ? 'text-right' : 'text-left'
                       }`}
                     >
@@ -229,140 +235,105 @@ export default function ChatsPropiedadPage() {
   }, [propiedadId, navigate])
 
   return (
-    <div className="relative min-h-screen bg-slate-950 text-slate-100">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-32 top-0 h-96 w-96 rounded-full bg-indigo-600/15 blur-3xl" />
-      </div>
+    <HostPageShell
+      backTo="/dashboard"
+      eyebrow="Conversaciones de huéspedes"
+      title={nombrePropiedad || 'Cargando...'}
+      description={
+        conversaciones.length > 0
+          ? `${conversaciones.length} ${conversaciones.length === 1 ? 'sesión' : 'sesiones'} · Agente ${nombreAgente}`
+          : `Agente ${nombreAgente}`
+      }
+    >
+      {cargando && <HostLoading label="Cargando conversaciones..." />}
 
-      <header className="relative z-10 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-5 sm:px-6">
-          <div>
-            <Link
-              to="/dashboard"
-              className="text-sm text-slate-500 transition-colors hover:text-indigo-300"
+      {!cargando && error && <HostFeedback>{error}</HostFeedback>}
+
+      {!cargando && !error && conversaciones.length === 0 && (
+        <EmptyState
+          icon={<IconMessages />}
+          title="Aún no hay conversaciones"
+          description="Cuando un huésped escanee el QR y hable con el conserje, las sesiones aparecerán aquí automáticamente."
+          actionLabel="Volver al panel"
+          actionTo="/dashboard"
+        />
+      )}
+
+      {!cargando && !error && conversaciones.length > 0 && (
+        <Card padding="none" className="overflow-hidden shadow-card-hover">
+          <div className="grid min-h-[70vh] lg:grid-cols-[320px_minmax(0,1fr)]">
+            <aside
+              className={`border-b border-host-border bg-host-surface lg:border-b-0 lg:border-r ${
+                conversacionSeleccionada ? 'hidden lg:block' : 'block'
+              }`}
             >
-              ← Volver al panel
-            </Link>
-            <p className="mt-2 text-xs font-medium uppercase tracking-wider text-indigo-400">
-              Conversaciones de huéspedes
-            </p>
-            <h1 className="mt-1 text-xl font-semibold text-white sm:text-2xl">
-              {nombrePropiedad || 'Cargando...'}
-            </h1>
-          </div>
-          <div className="hidden text-right sm:block">
-            <p className="text-sm text-slate-400">
-              {conversaciones.length}{' '}
-              {conversaciones.length === 1 ? 'sesión' : 'sesiones'}
-            </p>
-            <p className="mt-1 text-xs text-slate-600">
-              Agente: {nombreAgente}
-            </p>
-          </div>
-        </div>
-      </header>
+              <div className="border-b border-host-border px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-wider text-host-muted">
+                  Sesiones recientes
+                </p>
+              </div>
+              <div className="max-h-[70vh] overflow-y-auto">
+                {conversaciones.map((conversacion) => {
+                  const activa = conversacion.id === seleccionadaId
+                  return (
+                    <button
+                      key={conversacion.id}
+                      type="button"
+                      onClick={() => setSeleccionadaId(conversacion.id)}
+                      className={`w-full border-b border-host-border px-4 py-4 text-left transition-colors ${
+                        activa
+                          ? 'bg-teal-50'
+                          : 'hover:bg-stone-50'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-host-text">
+                            Sesión {acortarSessionId(conversacion.sessionId)}
+                          </p>
+                          <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-host-muted">
+                            {conversacion.ultimoMensajeRol === 'user'
+                              ? 'Huésped: '
+                              : `${nombreAgente}: `}
+                            {acortarTexto(conversacion.ultimoMensaje)}
+                          </p>
+                        </div>
+                        <span className="shrink-0 text-[10px] text-stone-400">
+                          {formatearFechaRelativa(conversacion.updatedAt)}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-[10px] text-stone-400">
+                        {conversacion.totalMensajes} mensajes ·{' '}
+                        {conversacion.mensajesUsuario} del huésped
+                      </p>
+                    </button>
+                  )
+                })}
+              </div>
+            </aside>
 
-      <main className="relative z-10 mx-auto max-w-6xl px-4 py-6 sm:px-6">
-        {cargando && (
-          <div className="flex min-h-[40vh] items-center justify-center">
-            <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-indigo-500/20 border-t-indigo-400" />
-          </div>
-        )}
-
-        {!cargando && error && (
-          <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-            {error}
-          </div>
-        )}
-
-        {!cargando && !error && conversaciones.length === 0 && (
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 px-6 py-12 text-center">
-            <p className="text-lg font-semibold text-white">
-              Aún no hay conversaciones
-            </p>
-            <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-slate-400">
-              Cuando un huésped escanee el QR y hable con el conserje, las
-              sesiones aparecerán aquí automáticamente.
-            </p>
-          </div>
-        )}
-
-        {!cargando && !error && conversaciones.length > 0 && (
-          <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50 shadow-xl shadow-black/20">
-            <div className="grid min-h-[70vh] lg:grid-cols-[320px_minmax(0,1fr)]">
-              <aside
-                className={`border-b border-slate-800 lg:border-b-0 lg:border-r ${
-                  conversacionSeleccionada ? 'hidden lg:block' : 'block'
-                }`}
-              >
-                <div className="border-b border-slate-800 px-4 py-3">
-                  <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                    Sesiones recientes
+            <section
+              className={`min-h-[60vh] ${
+                conversacionSeleccionada ? 'block' : 'hidden lg:block'
+              }`}
+            >
+              {conversacionSeleccionada ? (
+                <DetalleConversacion
+                  conversacion={conversacionSeleccionada}
+                  nombreAgente={nombreAgente}
+                  onVolver={() => setSeleccionadaId(null)}
+                />
+              ) : (
+                <div className="flex h-full min-h-[60vh] items-center justify-center bg-stone-50/50 px-6 text-center">
+                  <p className="text-sm text-host-muted">
+                    Selecciona una sesión para leer la conversación.
                   </p>
                 </div>
-                <div className="max-h-[70vh] overflow-y-auto">
-                  {conversaciones.map((conversacion) => {
-                    const activa = conversacion.id === seleccionadaId
-                    return (
-                      <button
-                        key={conversacion.id}
-                        type="button"
-                        onClick={() => setSeleccionadaId(conversacion.id)}
-                        className={`w-full border-b border-slate-800/80 px-4 py-4 text-left transition-colors ${
-                          activa
-                            ? 'bg-indigo-500/10'
-                            : 'hover:bg-slate-800/40'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-white">
-                              Sesión {acortarSessionId(conversacion.sessionId)}
-                            </p>
-                            <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-400">
-                              {conversacion.ultimoMensajeRol === 'user'
-                                ? 'Huésped: '
-                                : `${nombreAgente}: `}
-                              {acortarTexto(conversacion.ultimoMensaje)}
-                            </p>
-                          </div>
-                          <span className="shrink-0 text-[10px] text-slate-500">
-                            {formatearFechaRelativa(conversacion.updatedAt)}
-                          </span>
-                        </div>
-                        <p className="mt-2 text-[10px] text-slate-600">
-                          {conversacion.totalMensajes} mensajes ·{' '}
-                          {conversacion.mensajesUsuario} del huésped
-                        </p>
-                      </button>
-                    )
-                  })}
-                </div>
-              </aside>
-
-              <section
-                className={`min-h-[60vh] ${
-                  conversacionSeleccionada ? 'block' : 'hidden lg:block'
-                }`}
-              >
-                {conversacionSeleccionada ? (
-                  <DetalleConversacion
-                    conversacion={conversacionSeleccionada}
-                    nombreAgente={nombreAgente}
-                    onVolver={() => setSeleccionadaId(null)}
-                  />
-                ) : (
-                  <div className="flex h-full min-h-[60vh] items-center justify-center px-6 text-center">
-                    <p className="text-sm text-slate-500">
-                      Selecciona una sesión para leer la conversación.
-                    </p>
-                  </div>
-                )}
-              </section>
-            </div>
+              )}
+            </section>
           </div>
-        )}
-      </main>
-    </div>
+        </Card>
+      )}
+    </HostPageShell>
   )
 }

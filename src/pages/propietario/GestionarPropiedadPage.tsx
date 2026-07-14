@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
+import HostFeedback from '../../components/ui/HostFeedback'
+import HostPageShell from '../../components/ui/HostPageShell'
+import HubTile from '../../components/ui/HubTile'
+import { IconBook, IconMap, IconSettings } from '../../components/ui/icons'
+import { HostLoading } from '../../components/ui/HostShell'
 import {
   listarBloquesConocimiento,
   listarTarjetasGuiaPropiedad,
@@ -88,125 +93,67 @@ export default function GestionarPropiedadPage() {
     return null
   }
 
+  const hubDescription =
+    vista === 'hub'
+      ? 'Administra la base de conocimiento, las recomendaciones locales y la configuración del agente y alojamiento.'
+      : undefined
+
   return (
-    <div className="relative min-h-screen bg-slate-950 text-slate-100">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -right-32 top-0 h-96 w-96 rounded-full bg-violet-600/15 blur-3xl" />
-      </div>
+    <HostPageShell
+      backTo="/dashboard"
+      eyebrow="Gestión de alojamiento"
+      title={nombrePropiedad || 'Cargando...'}
+      description={hubDescription}
+      width="4xl"
+    >
+      {error && <HostFeedback className="mb-6">{error}</HostFeedback>}
 
-      <div className="relative z-10 mx-auto max-w-4xl px-4 py-8 sm:px-6">
-        <Link
-          to="/dashboard"
-          className="text-sm text-slate-500 transition-colors hover:text-indigo-300"
-        >
-          ← Volver al panel
-        </Link>
-
-        <header className="mt-6 mb-8">
-          <p className="text-sm font-medium uppercase tracking-wider text-indigo-400">
-            Gestión de alojamiento
-          </p>
-          <h1 className="mt-2 text-2xl font-semibold text-white sm:text-3xl">
-            {nombrePropiedad || 'Cargando...'}
-          </h1>
-          {vista === 'hub' && (
-            <p className="mt-2 text-sm text-slate-400">
-              Administra la base de conocimiento, las recomendaciones locales y
-              la configuración del agente y alojamiento.
-            </p>
-          )}
-        </header>
-
-        {error && (
-          <div className="mb-6 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-            {error}
-          </div>
-        )}
-
-        {cargando ? (
-          <div className="flex min-h-[40vh] items-center justify-center">
-            <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-indigo-500/20 border-t-indigo-400" />
-          </div>
-        ) : vista === 'hub' ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <button
-              type="button"
-              onClick={() => setVista('conocimiento')}
-              className="group rounded-2xl border border-slate-800 bg-slate-900/60 p-6 text-left transition-all hover:border-indigo-500/40 hover:shadow-lg hover:shadow-indigo-500/10"
-            >
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-500/15 text-2xl ring-1 ring-indigo-500/30">
-                📚
-              </div>
-              <h2 className="text-lg font-semibold text-white group-hover:text-indigo-100">
-                Base de conocimiento
-              </h2>
-              <p className="mt-2 text-sm leading-relaxed text-slate-400">
-                Bloques del manual indexados (Wi-Fi, acceso, normas...). Edita
-                título y texto; al guardar se actualizan los embeddings.
-              </p>
-              <p className="mt-4 text-xs font-medium text-indigo-300">
-                {totalBloques} bloques indexados →
-              </p>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setVista('guia')}
-              className="group rounded-2xl border border-slate-800 bg-slate-900/60 p-6 text-left transition-all hover:border-emerald-500/40 hover:shadow-lg hover:shadow-emerald-500/10"
-            >
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/15 text-2xl ring-1 ring-emerald-500/30">
-                🗺️
-              </div>
-              <h2 className="text-lg font-semibold text-white group-hover:text-emerald-100">
-                Guía local
-              </h2>
-              <p className="mt-2 text-sm leading-relaxed text-slate-400">
-                Tarjetas de supermercados, farmacias y restaurantes. Añade,
-                edita o elimina recomendaciones cercanas.
-              </p>
-              <p className="mt-4 text-xs font-medium text-emerald-300">
-                {totalTarjetas} tarjetas indexadas →
-              </p>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setVista('config')}
-              className="group rounded-2xl border border-slate-800 bg-slate-900/60 p-6 text-left transition-all hover:border-violet-500/40 hover:shadow-lg hover:shadow-violet-500/10 sm:col-span-2 lg:col-span-1"
-            >
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/15 text-2xl ring-1 ring-violet-500/30">
-                ⚙️
-              </div>
-              <h2 className="text-lg font-semibold text-white group-hover:text-violet-100">
-                Agente y alojamiento
-              </h2>
-              <p className="mt-2 text-sm leading-relaxed text-slate-400">
-                Nombre y personalidad del agente IA, nombre del apartamento y
-                ubicación. Si cambias la dirección, se regenera la guía local.
-              </p>
-              <p className="mt-4 text-xs font-medium text-violet-300">
-                Configuración general →
-              </p>
-            </button>
-          </div>
-        ) : vista === 'conocimiento' ? (
-          <BaseConocimientoEditor
-            propiedadId={propiedadId}
-            onVolver={volverAlHub}
+      {cargando ? (
+        <HostLoading label="Cargando propiedad..." />
+      ) : vista === 'hub' ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <HubTile
+            accent="teal"
+            icon={<IconBook />}
+            title="Base de conocimiento"
+            description="Bloques del manual indexados (Wi-Fi, acceso, normas...). Al guardar se actualizan los embeddings."
+            meta={`${totalBloques} bloques indexados`}
+            onClick={() => setVista('conocimiento')}
           />
-        ) : vista === 'guia' ? (
-          <GuiaLocalGestionPanel
-            propiedadId={propiedadId}
-            onVolver={volverAlHub}
+          <HubTile
+            accent="emerald"
+            icon={<IconMap />}
+            title="Guía local"
+            description="Supermercados, farmacias y restaurantes cercanos. Añade, edita o elimina recomendaciones."
+            meta={`${totalTarjetas} tarjetas indexadas`}
+            onClick={() => setVista('guia')}
           />
-        ) : (
-          <ConfigPropiedadPanel
-            propiedadId={propiedadId}
-            onVolver={volverAlHub}
-            onActualizado={setNombrePropiedad}
+          <HubTile
+            accent="violet"
+            icon={<IconSettings />}
+            title="Agente y alojamiento"
+            description="Nombre y personalidad del agente, datos del apartamento y ubicación."
+            meta="Configuración general"
+            onClick={() => setVista('config')}
           />
-        )}
-      </div>
-    </div>
+        </div>
+      ) : vista === 'conocimiento' ? (
+        <BaseConocimientoEditor
+          propiedadId={propiedadId}
+          onVolver={volverAlHub}
+        />
+      ) : vista === 'guia' ? (
+        <GuiaLocalGestionPanel
+          propiedadId={propiedadId}
+          onVolver={volverAlHub}
+        />
+      ) : (
+        <ConfigPropiedadPanel
+          propiedadId={propiedadId}
+          onVolver={volverAlHub}
+          onActualizado={setNombrePropiedad}
+        />
+      )}
+    </HostPageShell>
   )
 }

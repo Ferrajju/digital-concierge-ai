@@ -1,13 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
+import Button from '../../../components/ui/Button'
+import Card from '../../../components/ui/Card'
+import HostFeedback from '../../../components/ui/HostFeedback'
+import { HostSubpageHeader } from '../../../components/ui/HostPageShell'
+import { HostOverlayLoading } from '../../../components/ui/HostModal'
+import { HostLoading } from '../../../components/ui/HostShell'
+import {
+  fieldLabelClassName,
+  inputClassName,
+} from '../../../components/ui/inputClassName'
 import {
   crearBloqueVacio,
   guardarSoloBaseConocimiento,
   listarBloquesConocimiento,
 } from '../../../services/conocimientoService'
 import type { BloqueConocimiento } from '../types/gestionConocimiento'
-
-const inputClassName =
-  'w-full rounded-xl border border-slate-700 bg-slate-950/80 px-4 py-3 text-sm text-white placeholder:text-slate-600 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50'
 
 type BaseConocimientoEditorProps = {
   propiedadId: string
@@ -109,81 +116,59 @@ export default function BaseConocimientoEditor({
 
   return (
     <div>
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <button
+      <HostSubpageHeader
+        onBack={onVolver}
+        backLabel="Volver al hub"
+        title="Base de conocimiento"
+        description="Edita los bloques indexados del manual. Al guardar se regeneran los embeddings."
+        action={
+          <Button
             type="button"
-            onClick={onVolver}
-            className="text-sm text-slate-500 transition-colors hover:text-indigo-300"
+            variant="secondary"
+            onClick={anadirBloque}
+            disabled={guardando || cargando}
           >
-            ← Volver a gestión
-          </button>
-          <h2 className="mt-2 text-xl font-semibold text-white">
-            Base de conocimiento
-          </h2>
-          <p className="mt-1 text-sm text-slate-400">
-            Edita los bloques indexados del manual. Al guardar se regeneran los
-            embeddings vía Flujo 3.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={anadirBloque}
-          disabled={guardando || cargando}
-          className="rounded-xl border border-indigo-500/40 bg-indigo-500/10 px-4 py-2.5 text-sm font-medium text-indigo-200 transition-colors hover:bg-indigo-500/20 disabled:opacity-40"
-        >
-          + Nuevo bloque
-        </button>
-      </div>
+            + Nuevo bloque
+          </Button>
+        }
+      />
 
-      {error && (
-        <div className="mb-4 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-          {error}
-        </div>
-      )}
-
+      {error && <HostFeedback className="mb-4">{error}</HostFeedback>}
       {mensajeOk && (
-        <div className="mb-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+        <HostFeedback variant="success" className="mb-4">
           {mensajeOk}
-        </div>
+        </HostFeedback>
       )}
 
       {cargando ? (
-        <div className="flex min-h-[30vh] items-center justify-center">
-          <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-indigo-500/20 border-t-indigo-400" />
-        </div>
+        <HostLoading label="Cargando bloques..." />
       ) : bloques.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-800 bg-slate-950/40 px-6 py-12 text-center">
-          <p className="text-sm text-slate-400">
+        <div className="rounded-2xl border border-dashed border-stone-300 bg-host-surface px-6 py-12 text-center">
+          <p className="text-sm text-host-muted">
             No hay bloques indexados todavía.
           </p>
-          <button
-            type="button"
-            onClick={anadirBloque}
-            className="mt-4 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-500"
-          >
+          <Button type="button" onClick={anadirBloque} className="mt-4">
             Crear primer bloque
-          </button>
+          </Button>
         </div>
       ) : (
         <div className="space-y-4">
           {bloques.map((bloque, index) => (
-            <article
-              key={bloque.id ?? `nuevo-${index}`}
-              className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 sm:p-6"
-            >
+            <Card key={bloque.id ?? `nuevo-${index}`}>
               <div className="mb-4 flex items-start justify-between gap-3">
-                <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                <p className={fieldLabelClassName}>
                   Bloque {index + 1}
                   {bloque.esNuevo && (
-                    <span className="ml-2 text-indigo-300">Nuevo</span>
+                    <span className="ml-2 normal-case text-host-primary">
+                      Nuevo
+                    </span>
                   )}
                 </p>
                 <button
                   type="button"
                   onClick={() => eliminarBloque(index)}
                   disabled={guardando}
-                  className="text-xs text-slate-500 transition-colors hover:text-rose-400 disabled:opacity-40"
+                  className="text-xs font-medium text-host-muted transition-colors hover:text-rose-600 disabled:opacity-40"
                 >
                   Eliminar
                 </button>
@@ -191,9 +176,7 @@ export default function BaseConocimientoEditor({
 
               <div className="grid gap-4">
                 <div>
-                  <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
-                    Título
-                  </label>
+                  <label className={fieldLabelClassName}>Título</label>
                   <input
                     type="text"
                     value={bloque.titulo}
@@ -206,9 +189,7 @@ export default function BaseConocimientoEditor({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
-                    Contenido
-                  </label>
+                  <label className={fieldLabelClassName}>Contenido</label>
                   <textarea
                     value={bloque.contenido}
                     onChange={(e) =>
@@ -221,36 +202,30 @@ export default function BaseConocimientoEditor({
                   />
                 </div>
               </div>
-            </article>
+            </Card>
           ))}
         </div>
       )}
 
       {!cargando && bloques.length > 0 && (
         <div className="mt-6 flex justify-end">
-          <button
+          <Button
             type="button"
             onClick={handleGuardar}
+            loading={guardando}
             disabled={guardando}
-            className="rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition-all hover:from-indigo-400 hover:to-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
+            size="lg"
           >
-            {guardando ? 'Guardando e indexando...' : 'Guardar y actualizar embeddings'}
-          </button>
+            Guardar y actualizar embeddings
+          </Button>
         </div>
       )}
 
       {guardando && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md">
-          <div className="mx-6 w-full max-w-lg rounded-2xl border border-slate-800 bg-slate-900/90 p-8 text-center shadow-2xl">
-            <div className="mx-auto mb-6 h-14 w-14 animate-spin rounded-full border-[3px] border-indigo-500/20 border-t-indigo-400" />
-            <p className="text-lg font-semibold text-white">
-              Actualizando embeddings...
-            </p>
-            <p className="mt-2 text-sm text-slate-400">
-              n8n está reindexando los bloques del apartamento.
-            </p>
-          </div>
-        </div>
+        <HostOverlayLoading
+          title="Actualizando embeddings..."
+          description="n8n está reindexando los bloques del apartamento."
+        />
       )}
     </div>
   )

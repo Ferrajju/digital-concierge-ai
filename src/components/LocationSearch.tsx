@@ -3,6 +3,7 @@ import { Autocomplete } from '@react-google-maps/api'
 import { useGoogleMaps } from '../providers/GoogleMapsProvider'
 import type { ParsedAddress } from '../utils/parseGooglePlace'
 import { parseGooglePlace } from '../utils/parseGooglePlace'
+import { inputClassName } from './ui/inputClassName'
 
 type LocationSearchProps = {
   value: string
@@ -35,9 +36,6 @@ export default function LocationSearch({
     }
   }, [onChange, onPlaceSelect])
 
-  const inputClassName =
-    'w-full rounded-xl border border-slate-700 bg-slate-950/80 px-4 py-3.5 text-white placeholder:text-slate-600 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50'
-
   if (!apiKeyConfigured) {
     return (
       <input
@@ -66,8 +64,8 @@ export default function LocationSearch({
 
   if (!isLoaded) {
     return (
-      <div className="flex items-center gap-3 rounded-xl border border-slate-700 bg-slate-950/80 px-4 py-3.5 text-sm text-slate-500">
-        <span className="h-4 w-4 animate-spin rounded-full border-2 border-indigo-500/30 border-t-indigo-400" />
+      <div className="flex items-center gap-3 rounded-xl border border-host-border bg-host-surface px-4 py-3.5 text-sm text-host-muted">
+        <span className="h-4 w-4 animate-spin rounded-full border-2 border-teal-100 border-t-host-primary" />
         Cargando buscador de Google Maps...
       </div>
     )
