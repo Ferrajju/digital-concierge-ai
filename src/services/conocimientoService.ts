@@ -192,6 +192,19 @@ function bloquesToManualMarkdown(bloques: BloqueConocimiento[]): string {
     .join('\n\n')
 }
 
+export async function eliminarVectoresPropiedad(
+  propiedadId: string,
+): Promise<number> {
+  await obtenerPropietarioId()
+
+  const { data, error } = await supabase.rpc('eliminar_vectores_propiedad', {
+    p_propiedad_id: propiedadId,
+  })
+
+  if (error) throw error
+  return typeof data === 'number' ? data : 0
+}
+
 export async function reindexarConocimientoPropiedad(
   propiedadId: string,
   bloques: BloqueConocimiento[],
@@ -221,6 +234,8 @@ export async function reindexarConocimientoPropiedad(
     .eq('id', propiedadId)
 
   if (borradorError) throw borradorError
+
+  await eliminarVectoresPropiedad(propiedadId)
 
   await inyectarConocimientoFlujo3(
     {
