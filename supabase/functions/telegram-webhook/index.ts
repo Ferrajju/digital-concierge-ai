@@ -47,12 +47,18 @@ Deno.serve(async (req) => {
       await sendTelegramMessage(
         chatId,
         [
-          `Hola ${nombre}!`,
+          `Bienvenido a Umbral, ${nombre}.`,
           '',
-          `Tu Chat ID para Umbral es: ${chatId}`,
+          'Este bot envia alertas criticas de tus alojamientos turisticos.',
           '',
-          'Copialo en el onboarding o en el paso de alertas del wizard.',
-          'Asi recibiras incidencias criticas de tus huespedes en este chat.',
+          `Tu Chat ID es: ${chatId}`,
+          '',
+          'Pasos:',
+          '1. Copia el numero de arriba',
+          '2. Entra en elumbral.com (panel de propietario)',
+          '3. Pegalo en Alertas por Telegram y guarda',
+          '',
+          'Comandos: /ayuda',
         ].join('\n'),
         undefined,
       )
@@ -63,10 +69,13 @@ Deno.serve(async (req) => {
       await sendTelegramMessage(
         chatId,
         [
-          'Umbral — Bot de alertas',
+          'Umbral Alertas',
+          'Bot oficial: @TheUmbralbot',
           '',
-          '/start — Obtener tu Chat ID',
-          '/ayuda — Ver esta ayuda',
+          '/start - Obtener tu Chat ID',
+          '/ayuda - Ver esta ayuda',
+          '',
+          'Recibiras avisos cuando un huesped reporte incidencias en tus propiedades.',
         ].join('\n'),
         undefined,
       )
@@ -75,7 +84,7 @@ Deno.serve(async (req) => {
 
     await sendTelegramMessage(
       chatId,
-      'Usa /start para obtener tu Chat ID o /ayuda para mas informacion.',
+      'Umbral Alertas: usa /start para obtener tu Chat ID o /ayuda para mas informacion.',
       undefined,
     )
 

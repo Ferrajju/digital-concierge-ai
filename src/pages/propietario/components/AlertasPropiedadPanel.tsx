@@ -5,6 +5,11 @@ import HostFeedback from '../../../components/ui/HostFeedback'
 import { HostSubpageHeader } from '../../../components/ui/HostPageShell'
 import { HostLoading } from '../../../components/ui/HostShell'
 import { inputClassName } from '../../../components/ui/inputClassName'
+import TelegramConnectSteps from '../../../components/ui/TelegramConnectSteps'
+import {
+  TELEGRAM_BOT_DISPLAY,
+  TELEGRAM_BOT_URL,
+} from '../../../config/telegramBot'
 import {
   guardarAlertasPropiedad,
   obtenerAlertasPropiedad,
@@ -16,9 +21,6 @@ import {
   type ConfigAlertas,
   type TipoEventoAlerta,
 } from '../types/validacionWizard'
-
-const TELEGRAM_BOT_URL =
-  import.meta.env.VITE_TELEGRAM_BOT_URL ?? 'https://t.me/DigitalConciergeBot'
 
 type AlertasPropiedadPanelProps = {
   propiedadId: string
@@ -167,17 +169,13 @@ export default function AlertasPropiedadPanel({
       <div className="space-y-6">
         <FormSection
           title="Telegram de contacto"
-          description="Cuando un huésped reporte una incidencia crítica, el aviso llegará a este Chat ID."
+          description={`Conecta ${TELEGRAM_BOT_DISPLAY} para recibir avisos de este alojamiento en tu móvil.`}
         >
-          <InsetPanel className="space-y-3">
-            <p className="text-sm text-host-muted">
-              {telegramCuenta
-                ? `Chat ID de tu cuenta: ${telegramCuenta}`
-                : 'Aún no has guardado un Chat ID en el panel principal. Configúralo en el dashboard o aquí abajo.'}
-            </p>
-            <div className="flex flex-wrap gap-2">
+          <InsetPanel className="space-y-4">
+            <TelegramConnectSteps />
+            <div className="flex flex-wrap gap-2 pt-1">
               <Button type="button" variant="secondary" size="sm" onClick={abrirBot}>
-                Abrir bot y obtener Chat ID
+                Abrir {TELEGRAM_BOT_DISPLAY}
               </Button>
               {telegramCuenta && (
                 <Button
@@ -190,6 +188,11 @@ export default function AlertasPropiedadPanel({
                 </Button>
               )}
             </div>
+            {telegramCuenta && (
+              <p className="text-xs text-host-muted">
+                Chat ID guardado en tu cuenta: {telegramCuenta}
+              </p>
+            )}
           </InsetPanel>
 
           <FieldGroup label="Contacto para este alojamiento">

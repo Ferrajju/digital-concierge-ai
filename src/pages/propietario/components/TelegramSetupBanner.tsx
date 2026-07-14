@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react'
 import Button from '../../../components/ui/Button'
 import Card from '../../../components/ui/Card'
+import TelegramConnectSteps from '../../../components/ui/TelegramConnectSteps'
+import {
+  TELEGRAM_BOT_DISPLAY,
+  TELEGRAM_BOT_URL,
+} from '../../../config/telegramBot'
 import HostFeedback from '../../../components/ui/HostFeedback'
 import { FieldGroup } from '../../../components/ui/FormSection'
 import { inputClassName } from '../../../components/ui/inputClassName'
 import { obtenerTelegramPropietario } from '../../../services/propiedadService'
 import { guardarTelegramPropietario } from '../../../services/propietarioService'
-
-const TELEGRAM_BOT_URL =
-  import.meta.env.VITE_TELEGRAM_BOT_URL ?? 'https://t.me/DigitalConciergeBot'
 
 type TelegramSetupBannerProps = {
   onGuardado?: (chatId: string) => void
@@ -58,7 +60,9 @@ export default function TelegramSetupBanner({
     try {
       await guardarTelegramPropietario(chatId)
       setConfigurado(true)
-      setMensajeOk('Telegram guardado. Las alertas de tus propiedades pueden usar este Chat ID.')
+      setMensajeOk(
+        `Telegram conectado con ${TELEGRAM_BOT_DISPLAY}. Ya puedes recibir alertas de tus alojamientos.`,
+      )
       onGuardado?.(chatId.trim())
     } catch (err) {
       setError(
@@ -87,21 +91,35 @@ export default function TelegramSetupBanner({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="font-display text-base font-bold text-host-text">
-            {configurado ? 'Telegram conectado' : 'Conecta Telegram para alertas'}
+            {configurado
+              ? 'Alertas por Telegram'
+              : 'Conecta Telegram para recibir alertas'}
           </p>
           <p className="mt-1 text-sm leading-relaxed text-host-muted">
-            {configurado
-              ? 'Este Chat ID se usará por defecto en las alertas de tus alojamientos.'
-              : 'Abre el bot, escribe /start y pega aquí tu Chat ID para recibir incidencias críticas en el móvil.'}
+            Bot oficial de Umbral:{' '}
+            <a
+              href={TELEGRAM_BOT_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-host-primary hover:underline"
+            >
+              {TELEGRAM_BOT_DISPLAY}
+            </a>
           </p>
         </div>
         <Button type="button" variant="secondary" size="sm" onClick={abrirBot}>
-          Abrir bot
+          Abrir {TELEGRAM_BOT_DISPLAY}
         </Button>
       </div>
 
+      {!configurado && (
+        <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50 px-4 py-4">
+          <TelegramConnectSteps />
+        </div>
+      )}
+
       <form onSubmit={handleGuardar} className="mt-5 space-y-4">
-        <FieldGroup label="Chat ID de Telegram">
+        <FieldGroup label="Tu Chat ID">
           <input
             type="text"
             value={chatId}
@@ -114,9 +132,6 @@ export default function TelegramSetupBanner({
             disabled={guardando}
             className={inputClassName}
           />
-          <p className="mt-1.5 text-xs text-host-muted">
-            El bot te lo muestra al enviar /start. Es tu número personal de contacto en Telegram.
-          </p>
         </FieldGroup>
 
         {error && <HostFeedback>{error}</HostFeedback>}
