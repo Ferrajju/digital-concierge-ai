@@ -3,16 +3,18 @@ import { useNavigate, useParams } from 'react-router-dom'
 import HostFeedback from '../../components/ui/HostFeedback'
 import HostPageShell from '../../components/ui/HostPageShell'
 import HubTile from '../../components/ui/HubTile'
-import { IconBook, IconMap, IconSettings } from '../../components/ui/icons'
+import { IconBell, IconBook, IconMap, IconSettings } from '../../components/ui/icons'
 import { HostLoading } from '../../components/ui/HostShell'
 import {
   listarBloquesConocimiento,
   listarTarjetasGuiaPropiedad,
 } from '../../services/conocimientoService'
 import {
+  obtenerAlertasPropiedad,
   obtenerPropiedadBasicaPropietario,
   obtenerPropietarioId,
 } from '../../services/propiedadService'
+import AlertasPropiedadPanel from './components/AlertasPropiedadPanel'
 import BaseConocimientoEditor from './components/BaseConocimientoEditor'
 import ConfigPropiedadPanel from './components/ConfigPropiedadPanel'
 import GuiaLocalGestionPanel from './components/GuiaLocalGestionPanel'
@@ -26,6 +28,7 @@ export default function GestionarPropiedadPage() {
   const [nombrePropiedad, setNombrePropiedad] = useState('')
   const [totalBloques, setTotalBloques] = useState(0)
   const [totalTarjetas, setTotalTarjetas] = useState(0)
+  const [alertasActivas, setAlertasActivas] = useState(false)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
 
@@ -41,16 +44,18 @@ export default function GestionarPropiedadPage() {
     const cargar = async () => {
       try {
         await obtenerPropietarioId()
-        const [propiedad, bloques, tarjetas] = await Promise.all([
+        const [propiedad, bloques, tarjetas, alertas] = await Promise.all([
           obtenerPropiedadBasicaPropietario(propiedadId),
           listarBloquesConocimiento(propiedadId),
           listarTarjetasGuiaPropiedad(propiedadId),
+          obtenerAlertasPropiedad(propiedadId),
         ])
 
         if (!activo) return
         setNombrePropiedad(propiedad.nombreApartamento)
         setTotalBloques(bloques.length)
         setTotalTarjetas(tarjetas.length)
+        setAlertasActivas(alertas.activas)
       } catch (err) {
         if (!activo) return
         if (err instanceof Error && err.message.includes('iniciar sesión')) {
@@ -76,12 +81,14 @@ export default function GestionarPropiedadPage() {
 
   const recargarContadores = async () => {
     if (!propiedadId) return
-    const [bloques, tarjetas] = await Promise.all([
+    const [bloques, tarjetas, alertas] = await Promise.all([
       listarBloquesConocimiento(propiedadId),
       listarTarjetasGuiaPropiedad(propiedadId),
+      obtenerAlertasPropiedad(propiedadId),
     ])
     setTotalBloques(bloques.length)
     setTotalTarjetas(tarjetas.length)
+    setAlertasActivas(alertas.activas)
   }
 
   const volverAlHub = () => {
@@ -95,7 +102,7 @@ export default function GestionarPropiedadPage() {
 
   const hubDescription =
     vista === 'hub'
-      ? 'Administra la base de conocimiento, las recomendaciones locales y la configuración del agente y alojamiento.'
+      ? 'Administra la base de conocimiento, las recomendaciones locales, las alertas y la configuración del agente.'
       : undefined
 
   return (
@@ -111,7 +118,7 @@ export default function GestionarPropiedadPage() {
       {cargando ? (
         <HostLoading label="Cargando propiedad..." />
       ) : vista === 'hub' ? (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2">
           <HubTile
             accent="teal"
             icon={<IconBook />}
@@ -127,6 +134,14 @@ export default function GestionarPropiedadPage() {
             description="Supermercados, farmacias y restaurantes cercanos. Añade, edita o elimina recomendaciones."
             meta={`${totalTarjetas} tarjetas indexadas`}
             onClick={() => setVista('guia')}
+          />
+          <HubTile
+            accent="amber"
+            icon={<IconBell />}
+            title="Alertas Telegram"
+            description="Elige qué incidencias críticas quieres recibir en tu móvil para este alojamiento."
+            meta={alertasActivas ? 'Alertas activas' : 'Sin alertas activas'}
+            onClick={() => setVista('alertas')}
           />
           <HubTile
             accent="violet"
@@ -145,6 +160,12 @@ export default function GestionarPropiedadPage() {
       ) : vista === 'guia' ? (
         <GuiaLocalGestionPanel
           propiedadId={propiedadId}
+          onVolver={volverAlHub}
+        />
+      ) : vista === 'alertas' ? (
+        <AlertasPropiedadPanel
+          propiedadId={propiedadId}
+          nombrePropiedad={nombrePropiedad}
           onVolver={volverAlHub}
         />
       ) : (

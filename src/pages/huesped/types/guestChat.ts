@@ -20,4 +20,9 @@ export type N8nFlujo4Payload = {
 
 export type N8nFlujo4Response = {
   respuesta: string
+  alerta?: {
+    detectada: boolean
+    tipo?: 'emergencias' | 'checkin_anticipado' | 'averias'
+    resumen?: string
+  }
 }

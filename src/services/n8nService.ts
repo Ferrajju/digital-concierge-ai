@@ -343,7 +343,26 @@ function parseFlujo4Response(data: unknown): N8nFlujo4Response {
     )
   }
 
-  return { respuesta: respuesta.trim() }
+  const result: N8nFlujo4Response = {
+    respuesta: respuesta.trim(),
+  }
+
+  if (record.alerta && typeof record.alerta === 'object') {
+    const alerta = record.alerta as Record<string, unknown>
+    result.alerta = {
+      detectada: alerta.detectada === true,
+      tipo:
+        alerta.tipo === 'emergencias' ||
+        alerta.tipo === 'checkin_anticipado' ||
+        alerta.tipo === 'averias'
+          ? alerta.tipo
+          : undefined,
+      resumen:
+        typeof alerta.resumen === 'string' ? alerta.resumen.trim() : undefined,
+    }
+  }
+
+  return result
 }
 
 export async function enviarMensajeFlujo4(

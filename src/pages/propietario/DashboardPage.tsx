@@ -10,6 +10,7 @@ import {
   obtenerPropietarioId,
 } from '../../services/propiedadService'
 import PropiedadCard from './components/PropiedadCard'
+import TelegramSetupBanner from './components/TelegramSetupBanner'
 import type { PropiedadResumen } from './types/propiedadDashboard'
 
 export default function DashboardPage() {
@@ -66,6 +67,8 @@ export default function DashboardPage() {
       />
 
       {error && <HostAlert>{error}</HostAlert>}
+
+      <TelegramSetupBanner />
 
       {cargando ? (
         <HostLoading label="Cargando propiedades..." />

@@ -8,6 +8,29 @@ type GuardarOnboardingParams = {
   onboardingCompleted?: boolean
 }
 
+export async function guardarTelegramPropietario(
+  telegramChatId: string,
+): Promise<void> {
+  const propietarioId = await obtenerPropietarioId()
+  const trimmed = telegramChatId.trim()
+
+  if (!trimmed) {
+    throw new Error('Introduce tu Chat ID de Telegram.')
+  }
+
+  const telegramId = Number.parseInt(trimmed, 10)
+  if (Number.isNaN(telegramId)) {
+    throw new Error('El Chat ID debe ser un número válido.')
+  }
+
+  const { error } = await supabase
+    .from('propietarios')
+    .update({ telegram_chat_id: telegramId })
+    .eq('id', propietarioId)
+
+  if (error) throw error
+}
+
 export async function guardarOnboardingPropietario({
   perfil,
   telegramChatId = '',

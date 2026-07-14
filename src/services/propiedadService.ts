@@ -5,6 +5,7 @@ import type {
   ConfigPropiedadGuardada,
 } from '../pages/propietario/types/configPropiedad'
 import { normalizarPersonalidadAgente } from '../pages/propietario/types/configPropiedad'
+import { WIZARD_INICIAL } from '../pages/propietario/types/validacionWizard'
 
 export async function obtenerPropietarioId(): Promise<string> {
   const {
@@ -146,6 +147,69 @@ export async function guardarAlertasPropiedad(
       'No se pudieron guardar las alertas. Comprueba que tienes permiso de edición.',
     )
   }
+}
+
+function normalizarAlertasConfig(raw: unknown): AlertasPropiedadConfig {
+  const base = WIZARD_INICIAL.alertas
+
+  if (!raw || typeof raw !== 'object') {
+    return { ...base }
+  }
+
+  const config = raw as Record<string, unknown>
+  const eventosRaw =
+    config.eventos && typeof config.eventos === 'object'
+      ? (config.eventos as Record<string, unknown>)
+      : {}
+
+  const canal =
+    config.canal === 'telegram' ||
+    config.canal === 'email' ||
+    config.canal === 'ambos'
+      ? config.canal
+      : base.canal
+
+  return {
+    activas:
+      typeof config.activas === 'boolean' ? config.activas : base.activas,
+    canal,
+    contacto:
+      typeof config.contacto === 'string' ? config.contacto : base.contacto,
+    eventos: {
+      emergencias:
+        typeof eventosRaw.emergencias === 'boolean'
+          ? eventosRaw.emergencias
+          : base.eventos.emergencias,
+      checkin_anticipado:
+        typeof eventosRaw.checkin_anticipado === 'boolean'
+          ? eventosRaw.checkin_anticipado
+          : base.eventos.checkin_anticipado,
+      averias:
+        typeof eventosRaw.averias === 'boolean'
+          ? eventosRaw.averias
+          : base.eventos.averias,
+    },
+  }
+}
+
+export async function obtenerAlertasPropiedad(
+  propiedadId: string,
+): Promise<AlertasPropiedadConfig> {
+  const { data, error } = await supabase
+    .from('propiedades')
+    .select('alertas_config, permiso_modo_alerta')
+    .eq('id', propiedadId)
+    .single()
+
+  if (error) throw error
+
+  const alertas = normalizarAlertasConfig(data?.alertas_config)
+
+  if (typeof data?.permiso_modo_alerta === 'boolean') {
+    return { ...alertas, activas: data.permiso_modo_alerta }
+  }
+
+  return alertas
 }
 
 export async function obtenerTelegramPropietario(): Promise<string> {

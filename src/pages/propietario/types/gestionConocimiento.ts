@@ -6,4 +6,4 @@ export type BloqueConocimiento = {
   esNuevo: boolean
 }
 
-export type VistaGestion = 'hub' | 'conocimiento' | 'guia' | 'config'
+export type VistaGestion = 'hub' | 'conocimiento' | 'guia' | 'config' | 'alertas'

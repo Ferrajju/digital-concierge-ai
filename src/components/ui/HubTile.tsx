@@ -7,7 +7,7 @@ type HubTileProps = {
   description: string
   meta: string
   onClick: () => void
-  accent?: 'teal' | 'emerald' | 'violet'
+  accent?: 'teal' | 'emerald' | 'violet' | 'amber'
 }
 
 const accentClasses = {
@@ -25,6 +25,11 @@ const accentClasses = {
     icon: 'bg-violet-100 text-violet-800 border-violet-200',
     meta: 'bg-violet-50 text-violet-800 border-violet-200',
     hover: 'hover:border-violet-300 hover:shadow-card-hover',
+  },
+  amber: {
+    icon: 'bg-amber-100 text-amber-900 border-amber-200',
+    meta: 'bg-amber-50 text-amber-900 border-amber-200',
+    hover: 'hover:border-amber-300 hover:shadow-card-hover',
   },
 }
 
