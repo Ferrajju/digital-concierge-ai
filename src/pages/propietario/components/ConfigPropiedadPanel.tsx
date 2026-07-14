@@ -1,14 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import LocationSearch from '../../../components/LocationSearch'
 import Button from '../../../components/ui/Button'
-import Card from '../../../components/ui/Card'
+import FormSection, { FieldGroup, InsetPanel } from '../../../components/ui/FormSection'
 import HostFeedback from '../../../components/ui/HostFeedback'
 import HostModal from '../../../components/ui/HostModal'
 import { HostSubpageHeader } from '../../../components/ui/HostPageShell'
 import { HostLoading } from '../../../components/ui/HostShell'
 import {
   inputClassName,
-  labelClassName,
 } from '../../../components/ui/inputClassName'
 import { reprocesarGuiaLocalPorUbicacion } from '../../../services/conocimientoService'
 import {
@@ -238,208 +237,174 @@ export default function ConfigPropiedadPanel({
         description="Nombre y personalidad del conserje, datos del apartamento y ubicación."
       />
 
-      <Card padding="lg">
-        <h3 className="font-display text-lg font-semibold text-host-text">
-          Agente IA
-        </h3>
-        <p className="mt-1 text-sm text-host-muted">
-          Nombre y personalidad que verán los huéspedes al chatear.
-        </p>
+      <FormSection
+        title="Agente IA"
+        description="Nombre y personalidad que verán los huéspedes al chatear."
+      >
+        <FieldGroup label="Nombre del agente">
+          <input
+            id="nombre-agente"
+            type="text"
+            value={form.nombreIa}
+            onChange={(e) => updateForm({ nombreIa: e.target.value })}
+            disabled={guardando}
+            placeholder="Ej: Marco"
+            className={`max-w-md ${inputClassName}`}
+          />
+        </FieldGroup>
 
-        <div className="mt-6 space-y-5">
-          <div>
-            <label htmlFor="nombre-agente" className={labelClassName}>
-              Nombre del agente
-            </label>
-            <input
-              id="nombre-agente"
-              type="text"
-              value={form.nombreIa}
-              onChange={(e) => updateForm({ nombreIa: e.target.value })}
-              disabled={guardando}
-              placeholder="Ej: Marco"
-              className={`mt-2 max-w-md ${inputClassName}`}
-            />
-          </div>
+        <FieldGroup label="Personalidad del conserje">
+          <p className="mb-3 text-sm text-host-muted">
+            Elige el tono que mejor encaje con tu tipo de alojamiento.
+          </p>
 
-          <div>
-            <p className={labelClassName}>Personalidad del conserje</p>
-            <p className="mt-1 text-xs text-host-muted">
-              Elige el tono que mejor encaje con tu tipo de alojamiento.
-            </p>
+          <div className="grid gap-3 lg:grid-cols-3">
+            {PERSONALIDADES_AGENTE.map((personalidad) => {
+              const seleccionada = personalidadSeleccionada === personalidad.id
 
-            <div className="mt-4 grid gap-3 lg:grid-cols-3">
-              {PERSONALIDADES_AGENTE.map((personalidad) => {
-                const seleccionada = personalidadSeleccionada === personalidad.id
-
-                return (
-                  <button
-                    key={personalidad.id}
-                    type="button"
-                    disabled={guardando}
-                    onClick={() => seleccionarPersonalidad(personalidad.id)}
-                    className={`rounded-2xl border p-4 text-left transition-all disabled:opacity-60 ${
-                      seleccionada
-                        ? 'border-host-primary bg-teal-50 shadow-sm ring-1 ring-teal-200'
-                        : 'border-host-border bg-host-surface hover:border-stone-300 hover:bg-stone-50'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <span className="text-2xl" aria-hidden>
-                        {personalidad.icono}
+              return (
+                <button
+                  key={personalidad.id}
+                  type="button"
+                  disabled={guardando}
+                  onClick={() => seleccionarPersonalidad(personalidad.id)}
+                  className={`rounded-xl border-2 p-4 text-left transition-all disabled:opacity-60 ${
+                    seleccionada
+                      ? 'border-host-primary bg-teal-50 shadow-sm'
+                      : 'border-stone-200 bg-white hover:border-stone-300 hover:bg-stone-50'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-2xl" aria-hidden>
+                      {personalidad.icono}
+                    </span>
+                    {seleccionada && (
+                      <span className="rounded-md border border-teal-300 bg-teal-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-teal-800">
+                        Activa
                       </span>
-                      {seleccionada && (
-                        <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-teal-800">
-                          Activa
-                        </span>
-                      )}
-                    </div>
-                    <h4 className="mt-3 text-sm font-semibold text-host-text">
-                      {personalidad.titulo}
-                    </h4>
-                    <p className="mt-1 text-xs font-medium text-host-primary">
-                      {personalidad.subtitulo}
-                    </p>
-                    <p className="mt-2 text-xs leading-relaxed text-host-muted">
-                      {personalidad.descripcion}
-                    </p>
-                  </button>
-                )
-              })}
-            </div>
+                    )}
+                  </div>
+                  <h4 className="mt-3 text-sm font-bold text-host-text">
+                    {personalidad.titulo}
+                  </h4>
+                  <p className="mt-1 text-xs font-semibold text-host-primary">
+                    {personalidad.subtitulo}
+                  </p>
+                  <p className="mt-2 text-xs leading-relaxed text-host-muted">
+                    {personalidad.descripcion}
+                  </p>
+                </button>
+              )
+            })}
           </div>
-        </div>
-      </Card>
+        </FieldGroup>
+      </FormSection>
 
-      <Card padding="lg">
-        <h3 className="font-display text-lg font-semibold text-host-text">
-          Alojamiento
-        </h3>
-        <p className="mt-1 text-sm text-host-muted">
-          Nombre visible y ubicación de referencia para huéspedes y guía local.
-        </p>
+      <FormSection
+        title="Alojamiento"
+        description="Nombre visible y ubicación de referencia para huéspedes y guía local."
+      >
+        <FieldGroup label="Nombre del apartamento">
+          <input
+            id="nombre-apartamento"
+            type="text"
+            value={form.nombreApartamento}
+            onChange={(e) =>
+              updateForm({ nombreApartamento: e.target.value })
+            }
+            disabled={guardando}
+            className={inputClassName}
+          />
+        </FieldGroup>
 
-        <div className="mt-6 space-y-4">
-          <div>
-            <label htmlFor="nombre-apartamento" className={labelClassName}>
-              Nombre del apartamento
-            </label>
+        {apiKeyConfigured && (
+          <InsetPanel>
+            <p className="text-xs font-bold uppercase tracking-wide text-host-primary">
+              Buscador rápido
+            </p>
+            <p className="mt-1 text-sm text-host-muted">
+              Selecciona la dirección en Google Maps para autorrellenar.
+            </p>
+            <div className="mt-3">
+              <LocationSearch
+                value={form.busquedaRapida}
+                onChange={(value) => updateForm({ busquedaRapida: value })}
+                onPlaceSelect={handlePlaceSelect}
+                disabled={guardando || !isLoaded}
+              />
+            </div>
+            {loadError && (
+              <HostFeedback className="mt-3">
+                No se pudo cargar Google Maps: {loadError.message}
+              </HostFeedback>
+            )}
+          </InsetPanel>
+        )}
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FieldGroup label="Calle y número" className="sm:col-span-2">
             <input
-              id="nombre-apartamento"
+              id="config-direccion-calle"
               type="text"
-              value={form.nombreApartamento}
+              value={form.direccionCalle}
               onChange={(e) =>
-                updateForm({ nombreApartamento: e.target.value })
+                updateForm({ direccionCalle: e.target.value })
               }
               disabled={guardando}
-              className={`mt-2 ${inputClassName}`}
+              className={inputClassName}
             />
-          </div>
-
-          {apiKeyConfigured && (
-            <div className="rounded-2xl border border-teal-100 bg-teal-50/50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-host-primary">
-                Buscador rápido
-              </p>
-              <p className="mt-1 text-xs text-host-muted">
-                Selecciona la dirección en Google Maps para autorrellenar.
-              </p>
-              <div className="mt-3">
-                <LocationSearch
-                  value={form.busquedaRapida}
-                  onChange={(value) => updateForm({ busquedaRapida: value })}
-                  onPlaceSelect={handlePlaceSelect}
-                  disabled={guardando || !isLoaded}
-                />
-              </div>
-              {loadError && (
-                <HostFeedback className="mt-2">
-                  No se pudo cargar Google Maps: {loadError.message}
-                </HostFeedback>
-              )}
-            </div>
-          )}
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <label htmlFor="config-direccion-calle" className={labelClassName}>
-                Calle y número
-              </label>
-              <input
-                id="config-direccion-calle"
-                type="text"
-                value={form.direccionCalle}
-                onChange={(e) =>
-                  updateForm({ direccionCalle: e.target.value })
-                }
-                disabled={guardando}
-                className={`mt-2 ${inputClassName}`}
-              />
-            </div>
-            <div>
-              <label htmlFor="config-piso" className={labelClassName}>
-                Piso, puerta o bloque
-              </label>
-              <input
-                id="config-piso"
-                type="text"
-                value={form.pisoPuerta}
-                onChange={(e) => updateForm({ pisoPuerta: e.target.value })}
-                disabled={guardando}
-                className={`mt-2 ${inputClassName}`}
-              />
-            </div>
-            <div>
-              <label htmlFor="config-cp" className={labelClassName}>
-                Código postal
-              </label>
-              <input
-                id="config-cp"
-                type="text"
-                value={form.codigoPostal}
-                onChange={(e) => updateForm({ codigoPostal: e.target.value })}
-                disabled={guardando}
-                className={`mt-2 ${inputClassName}`}
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label htmlFor="config-ciudad" className={labelClassName}>
-                Ciudad / región
-              </label>
-              <input
-                id="config-ciudad"
-                type="text"
-                value={form.ciudadRegion}
-                onChange={(e) => updateForm({ ciudadRegion: e.target.value })}
-                disabled={guardando}
-                className={`mt-2 ${inputClassName}`}
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label htmlFor="config-indicaciones" className={labelClassName}>
-                Indicaciones de acceso
-              </label>
-              <textarea
-                id="config-indicaciones"
-                value={form.indicacionesAcceso}
-                onChange={(e) =>
-                  updateForm({ indicacionesAcceso: e.target.value })
-                }
-                disabled={guardando}
-                rows={3}
-                className={`mt-2 resize-none ${inputClassName}`}
-              />
-            </div>
-          </div>
-
-          {cambioUbicacionPendiente && (
-            <HostFeedback variant="warning">
-              Has modificado la ubicación. Al guardar se eliminarán las
-              recomendaciones locales actuales y se generará una guía nueva.
-            </HostFeedback>
-          )}
+          </FieldGroup>
+          <FieldGroup label="Piso, puerta o bloque">
+            <input
+              id="config-piso"
+              type="text"
+              value={form.pisoPuerta}
+              onChange={(e) => updateForm({ pisoPuerta: e.target.value })}
+              disabled={guardando}
+              className={inputClassName}
+            />
+          </FieldGroup>
+          <FieldGroup label="Código postal">
+            <input
+              id="config-cp"
+              type="text"
+              value={form.codigoPostal}
+              onChange={(e) => updateForm({ codigoPostal: e.target.value })}
+              disabled={guardando}
+              className={inputClassName}
+            />
+          </FieldGroup>
+          <FieldGroup label="Ciudad / región" className="sm:col-span-2">
+            <input
+              id="config-ciudad"
+              type="text"
+              value={form.ciudadRegion}
+              onChange={(e) => updateForm({ ciudadRegion: e.target.value })}
+              disabled={guardando}
+              className={inputClassName}
+            />
+          </FieldGroup>
+          <FieldGroup label="Indicaciones de acceso" className="sm:col-span-2">
+            <textarea
+              id="config-indicaciones"
+              value={form.indicacionesAcceso}
+              onChange={(e) =>
+                updateForm({ indicacionesAcceso: e.target.value })
+              }
+              disabled={guardando}
+              rows={3}
+              className={`resize-none ${inputClassName}`}
+            />
+          </FieldGroup>
         </div>
-      </Card>
+
+        {cambioUbicacionPendiente && (
+          <HostFeedback variant="warning">
+            Has modificado la ubicación. Al guardar se eliminarán las
+            recomendaciones locales actuales y se generará una guía nueva.
+          </HostFeedback>
+        )}
+      </FormSection>
 
       {error && <HostFeedback>{error}</HostFeedback>}
       {mensajeOk && <HostFeedback variant="success">{mensajeOk}</HostFeedback>}

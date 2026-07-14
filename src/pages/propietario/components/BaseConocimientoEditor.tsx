@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import Button from '../../../components/ui/Button'
-import Card from '../../../components/ui/Card'
+import FormSection, { FieldGroup } from '../../../components/ui/FormSection'
 import HostFeedback from '../../../components/ui/HostFeedback'
 import { HostSubpageHeader } from '../../../components/ui/HostPageShell'
 import { HostOverlayLoading } from '../../../components/ui/HostModal'
 import { HostLoading } from '../../../components/ui/HostShell'
 import {
-  fieldLabelClassName,
   inputClassName,
 } from '../../../components/ui/inputClassName'
 import {
@@ -154,55 +153,45 @@ export default function BaseConocimientoEditor({
       ) : (
         <div className="space-y-4">
           {bloques.map((bloque, index) => (
-            <Card key={bloque.id ?? `nuevo-${index}`}>
-              <div className="mb-4 flex items-start justify-between gap-3">
-                <p className={fieldLabelClassName}>
-                  Bloque {index + 1}
-                  {bloque.esNuevo && (
-                    <span className="ml-2 normal-case text-host-primary">
-                      Nuevo
-                    </span>
-                  )}
-                </p>
+            <FormSection
+              key={bloque.id ?? `nuevo-${index}`}
+              title={`Bloque ${index + 1}${bloque.esNuevo ? ' · Nuevo' : ''}`}
+              action={
                 <button
                   type="button"
                   onClick={() => eliminarBloque(index)}
                   disabled={guardando}
-                  className="text-xs font-medium text-host-muted transition-colors hover:text-rose-600 disabled:opacity-40"
+                  className="text-xs font-semibold text-host-muted transition-colors hover:text-rose-600 disabled:opacity-40"
                 >
                   Eliminar
                 </button>
-              </div>
-
-              <div className="grid gap-4">
-                <div>
-                  <label className={fieldLabelClassName}>Título</label>
-                  <input
-                    type="text"
-                    value={bloque.titulo}
-                    onChange={(e) =>
-                      actualizarBloque(index, { titulo: e.target.value })
-                    }
-                    placeholder="Ej: Conexión Wi-Fi"
-                    disabled={guardando}
-                    className={`mt-2 ${inputClassName}`}
-                  />
-                </div>
-                <div>
-                  <label className={fieldLabelClassName}>Contenido</label>
-                  <textarea
-                    value={bloque.contenido}
-                    onChange={(e) =>
-                      actualizarBloque(index, { contenido: e.target.value })
-                    }
-                    rows={5}
-                    placeholder="Texto que usará el conserje para responder..."
-                    disabled={guardando}
-                    className={`mt-2 resize-y ${inputClassName}`}
-                  />
-                </div>
-              </div>
-            </Card>
+              }
+            >
+              <FieldGroup label="Título">
+                <input
+                  type="text"
+                  value={bloque.titulo}
+                  onChange={(e) =>
+                    actualizarBloque(index, { titulo: e.target.value })
+                  }
+                  placeholder="Ej: Conexión Wi-Fi"
+                  disabled={guardando}
+                  className={inputClassName}
+                />
+              </FieldGroup>
+              <FieldGroup label="Contenido">
+                <textarea
+                  value={bloque.contenido}
+                  onChange={(e) =>
+                    actualizarBloque(index, { contenido: e.target.value })
+                  }
+                  rows={5}
+                  placeholder="Texto que usará el conserje para responder..."
+                  disabled={guardando}
+                  className={`resize-y ${inputClassName}`}
+                />
+              </FieldGroup>
+            </FormSection>
           ))}
         </div>
       )}

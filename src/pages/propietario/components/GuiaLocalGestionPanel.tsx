@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import Button from '../../../components/ui/Button'
-import Card from '../../../components/ui/Card'
+import FormSection, { FieldGroup } from '../../../components/ui/FormSection'
 import HostFeedback from '../../../components/ui/HostFeedback'
 import { HostSubpageHeader } from '../../../components/ui/HostPageShell'
 import { HostOverlayLoading } from '../../../components/ui/HostModal'
 import { HostLoading } from '../../../components/ui/HostShell'
 import {
-  fieldLabelClassName,
   inputClassName,
 } from '../../../components/ui/inputClassName'
 import {
@@ -147,14 +146,12 @@ export default function GuiaLocalGestionPanel({
       {cargando ? (
         <HostLoading label="Cargando tarjetas..." />
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-6">
           {tarjetasPorCategoria.map(({ id, label, icono, tarjetas: grupo }) => (
-            <section key={id} className="space-y-4">
-              <div className="flex items-center justify-between gap-3">
-                <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-stone-600">
-                  <span aria-hidden>{icono}</span>
-                  {label}
-                </h3>
+            <FormSection
+              key={id}
+              title={`${icono} ${label}`}
+              action={
                 <Button
                   type="button"
                   variant="secondary"
@@ -164,21 +161,25 @@ export default function GuiaLocalGestionPanel({
                 >
                   + Añadir
                 </Button>
-              </div>
-
+              }
+            >
               {grupo.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-stone-300 bg-stone-50 px-4 py-6 text-center text-sm text-host-muted">
+                <div className="rounded-xl border border-dashed border-stone-300 bg-stone-50 px-4 py-6 text-center text-sm font-medium text-host-muted">
                   No hay recomendaciones en esta categoría.
                 </div>
               ) : (
                 <div className="space-y-4">
                   {grupo.map((tarjeta) => (
-                    <Card
+                    <div
                       key={tarjeta.id}
-                      className={tarjeta.activa ? '' : 'opacity-60'}
+                      className={`rounded-xl border-2 p-4 sm:p-5 ${
+                        tarjeta.activa
+                          ? 'border-stone-200 bg-white'
+                          : 'border-stone-200 bg-stone-50 opacity-70'
+                      }`}
                     >
                       <div className="mb-4 flex items-start justify-between gap-3">
-                        <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-700">
+                        <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-stone-700">
                           <input
                             type="checkbox"
                             checked={tarjeta.activa}
@@ -196,17 +197,14 @@ export default function GuiaLocalGestionPanel({
                           type="button"
                           onClick={() => eliminarTarjeta(tarjeta.id)}
                           disabled={guardando}
-                          className="text-xs font-medium text-host-muted transition-colors hover:text-rose-600 disabled:opacity-40"
+                          className="text-xs font-semibold text-host-muted transition-colors hover:text-rose-600 disabled:opacity-40"
                         >
                           Eliminar
                         </button>
                       </div>
 
                       <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="sm:col-span-2">
-                          <label className={fieldLabelClassName}>
-                            Nombre del lugar
-                          </label>
+                        <FieldGroup label="Nombre del lugar" className="sm:col-span-2">
                           <input
                             type="text"
                             value={tarjeta.nombre}
@@ -216,13 +214,10 @@ export default function GuiaLocalGestionPanel({
                               })
                             }
                             disabled={guardando}
-                            className={`mt-2 ${inputClassName}`}
+                            className={inputClassName}
                           />
-                        </div>
-                        <div>
-                          <label className={fieldLabelClassName}>
-                            Distancia
-                          </label>
+                        </FieldGroup>
+                        <FieldGroup label="Distancia">
                           <input
                             type="text"
                             value={tarjeta.distancia}
@@ -233,13 +228,10 @@ export default function GuiaLocalGestionPanel({
                             }
                             placeholder="Ej: A 5 min andando"
                             disabled={guardando}
-                            className={`mt-2 ${inputClassName}`}
+                            className={inputClassName}
                           />
-                        </div>
-                        <div>
-                          <label className={fieldLabelClassName}>
-                            Categoría
-                          </label>
+                        </FieldGroup>
+                        <FieldGroup label="Categoría">
                           <select
                             value={tarjeta.categoria}
                             onChange={(e) =>
@@ -248,7 +240,7 @@ export default function GuiaLocalGestionPanel({
                               })
                             }
                             disabled={guardando}
-                            className={`mt-2 ${inputClassName}`}
+                            className={inputClassName}
                           >
                             {CATEGORIAS_GUIA.map((categoria) => (
                               <option key={categoria.id} value={categoria.id}>
@@ -256,11 +248,8 @@ export default function GuiaLocalGestionPanel({
                               </option>
                             ))}
                           </select>
-                        </div>
-                        <div className="sm:col-span-2">
-                          <label className={fieldLabelClassName}>
-                            Información útil
-                          </label>
+                        </FieldGroup>
+                        <FieldGroup label="Información útil" className="sm:col-span-2">
                           <textarea
                             value={tarjeta.informacion}
                             onChange={(e) =>
@@ -270,15 +259,15 @@ export default function GuiaLocalGestionPanel({
                             }
                             rows={3}
                             disabled={guardando}
-                            className={`mt-2 resize-none ${inputClassName}`}
+                            className={`resize-none ${inputClassName}`}
                           />
-                        </div>
+                        </FieldGroup>
                       </div>
-                    </Card>
+                    </div>
                   ))}
                 </div>
               )}
-            </section>
+            </FormSection>
           ))}
 
           <div className="flex justify-end pt-2">

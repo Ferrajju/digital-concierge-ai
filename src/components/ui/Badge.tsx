@@ -6,16 +6,16 @@ type BadgeProps = {
 }
 
 const variantClasses: Record<BadgeVariant, string> = {
-  success: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-  neutral: 'bg-stone-100 text-stone-600 ring-stone-200',
-  warning: 'bg-amber-50 text-amber-800 ring-amber-200',
+  success: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+  neutral: 'bg-stone-200 text-stone-700 border-stone-300',
+  warning: 'bg-amber-100 text-amber-900 border-amber-300',
 }
 
 export default function Badge({ children, variant = 'neutral' }: BadgeProps) {
   return (
     <span
       className={[
-        'inline-flex shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ring-1 ring-inset',
+        'inline-flex shrink-0 rounded-md border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide',
         variantClasses[variant],
       ].join(' ')}
     >

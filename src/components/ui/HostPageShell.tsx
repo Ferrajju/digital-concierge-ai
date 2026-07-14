@@ -32,7 +32,7 @@ export default function HostPageShell({
       <div
         className={`mx-auto ${widthClasses[width]} px-4 py-8 sm:px-6 sm:py-10`}
       >
-        <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+        <div className="mb-8 flex flex-wrap items-start justify-between gap-4 border-b border-stone-200 pb-6">
           <div>
             <Link
               to={backTo}
@@ -81,11 +81,11 @@ export function HostSubpageHeader({
         <button
           type="button"
           onClick={onBack}
-          className="text-sm font-medium text-host-muted transition-colors hover:text-host-primary"
+          className="text-sm font-semibold text-host-muted transition-colors hover:text-host-primary"
         >
           ← {backLabel}
         </button>
-        <h2 className="mt-2 font-display text-xl font-semibold text-host-text">
+        <h2 className="mt-2 font-display text-xl font-bold text-host-text sm:text-2xl">
           {title}
         </h2>
         {description && (

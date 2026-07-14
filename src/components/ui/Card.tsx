@@ -22,7 +22,7 @@ export default function Card({
   return (
     <div
       className={[
-        'rounded-2xl border border-host-border bg-host-surface shadow-card',
+        'rounded-2xl border border-stone-200 bg-host-surface shadow-card ring-1 ring-stone-900/[0.03]',
         hover
           ? 'transition-all duration-200 hover:border-stone-300 hover:shadow-card-hover'
           : '',

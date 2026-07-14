@@ -5,13 +5,13 @@ export default {
     extend: {
       colors: {
         host: {
-          bg: '#FAFAF8',
+          bg: '#F5F5F4',
           surface: '#FFFFFF',
-          border: '#E7E5E4',
+          border: '#D6D3D1',
           primary: '#0F766E',
           accent: '#B45309',
           text: '#1C1917',
-          muted: '#78716C',
+          muted: '#57534E',
         },
       },
       fontFamily: {
@@ -19,9 +19,10 @@ export default {
         display: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
-        card: '0 1px 3px rgba(28, 25, 23, 0.06), 0 1px 2px rgba(28, 25, 23, 0.04)',
+        card: '0 1px 2px rgba(28, 25, 23, 0.06), 0 4px 12px rgba(28, 25, 23, 0.05)',
         'card-hover':
-          '0 4px 12px rgba(28, 25, 23, 0.08), 0 2px 4px rgba(28, 25, 23, 0.04)',
+          '0 4px 16px rgba(28, 25, 23, 0.1), 0 2px 6px rgba(28, 25, 23, 0.06)',
+        inset: 'inset 0 1px 2px rgba(28, 25, 23, 0.06)',
       },
       animation: {
         'fade-in-up': 'fadeInUp 0.5s ease-out forwards',

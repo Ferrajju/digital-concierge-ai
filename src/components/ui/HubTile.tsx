@@ -12,19 +12,19 @@ type HubTileProps = {
 
 const accentClasses = {
   teal: {
-    icon: 'bg-teal-50 text-host-primary ring-teal-100',
-    meta: 'text-host-primary',
-    hover: 'hover:border-teal-200 hover:shadow-card-hover',
+    icon: 'bg-teal-100 text-teal-800 border-teal-200',
+    meta: 'bg-teal-50 text-teal-800 border-teal-200',
+    hover: 'hover:border-teal-300 hover:shadow-card-hover',
   },
   emerald: {
-    icon: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
-    meta: 'text-emerald-700',
-    hover: 'hover:border-emerald-200 hover:shadow-card-hover',
+    icon: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    meta: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+    hover: 'hover:border-emerald-300 hover:shadow-card-hover',
   },
   violet: {
-    icon: 'bg-violet-50 text-violet-700 ring-violet-100',
-    meta: 'text-violet-700',
-    hover: 'hover:border-violet-200 hover:shadow-card-hover',
+    icon: 'bg-violet-100 text-violet-800 border-violet-200',
+    meta: 'bg-violet-50 text-violet-800 border-violet-200',
+    hover: 'hover:border-violet-300 hover:shadow-card-hover',
   },
 }
 
@@ -42,25 +42,30 @@ export default function HubTile({
     <button
       type="button"
       onClick={onClick}
-      className={`group rounded-2xl border border-host-border bg-host-surface p-6 text-left shadow-card transition-all ${styles.hover}`}
+      className={`group flex h-full flex-col overflow-hidden rounded-2xl border border-stone-200 bg-host-surface text-left shadow-card ring-1 ring-stone-900/[0.03] transition-all ${styles.hover}`}
     >
-      <div
-        className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl ring-1 ${styles.icon}`}
-      >
-        {icon}
+      <div className="border-b border-stone-200 px-5 py-5">
+        <div
+          className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl border ${styles.icon}`}
+        >
+          {icon}
+        </div>
+        <h2 className="font-display text-lg font-bold text-host-text">
+          {title}
+        </h2>
+        <p className="mt-2 text-sm leading-relaxed text-host-muted">
+          {description}
+        </p>
       </div>
-      <h2 className="font-display text-lg font-semibold text-host-text">
-        {title}
-      </h2>
-      <p className="mt-2 text-sm leading-relaxed text-host-muted">
-        {description}
-      </p>
-      <p
-        className={`mt-4 flex items-center gap-1 text-xs font-semibold ${styles.meta}`}
-      >
-        {meta}
-        <IconArrowRight className="transition-transform group-hover:translate-x-0.5" />
-      </p>
+
+      <div className="mt-auto border-t border-stone-200 px-5 py-3">
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-bold ${styles.meta}`}
+        >
+          {meta}
+          <IconArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+        </span>
+      </div>
     </button>
   )
 }

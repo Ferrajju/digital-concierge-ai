@@ -78,11 +78,40 @@ export default function DashboardPage() {
           actionTo="/configurar-vivienda"
         />
       ) : (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {propiedades.map((propiedad) => (
-            <PropiedadCard key={propiedad.id} propiedad={propiedad} />
-          ))}
-        </div>
+        <>
+          <div className="mb-6 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm">
+              <p className="text-xs font-bold uppercase tracking-wide text-stone-500">
+                Total alojamientos
+              </p>
+              <p className="mt-1 font-display text-2xl font-bold text-host-text">
+                {propiedades.length}
+              </p>
+            </div>
+            <div className="rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm">
+              <p className="text-xs font-bold uppercase tracking-wide text-stone-500">
+                Activas
+              </p>
+              <p className="mt-1 font-display text-2xl font-bold text-emerald-700">
+                {propiedades.filter((p) => p.activa).length}
+              </p>
+            </div>
+            <div className="rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm sm:col-span-1">
+              <p className="text-xs font-bold uppercase tracking-wide text-stone-500">
+                Pendientes de configurar
+              </p>
+              <p className="mt-1 font-display text-2xl font-bold text-stone-600">
+                {propiedades.filter((p) => !p.activa).length}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+            {propiedades.map((propiedad) => (
+              <PropiedadCard key={propiedad.id} propiedad={propiedad} />
+            ))}
+          </div>
+        </>
       )}
     </HostShell>
   )
