@@ -1,6 +1,7 @@
 import type { TarjetaGuiaLocal } from '../pages/propietario/types/guiaLocal'
 import type { BloqueConocimiento } from '../pages/propietario/types/gestionConocimiento'
 import { inyectarConocimientoFlujo3 } from './n8nService'
+import { generarTarjetasGuiaLocal } from './guiaLocalService'
 import { supabase } from './supabaseClient'
 import { obtenerPropietarioId } from './propiedadService'
 import { formatConocimientoUnificado } from '../utils/formatConocimientoUnificado'
@@ -229,12 +230,19 @@ export async function guardarTarjetasGuiaPropiedad(
 ): Promise<void> {
   await obtenerPropietarioId()
 
-  const { error } = await supabase
+  const { data: actualizada, error } = await supabase
     .from('propiedades')
     .update({ guia_local_tarjetas: tarjetas })
     .eq('id', propiedadId)
+    .select('id')
+    .maybeSingle()
 
   if (error) throw error
+  if (!actualizada) {
+    throw new Error(
+      'No se pudo guardar la guía local. Comprueba que tienes permiso de edición.',
+    )
+  }
 }
 
 function bloquesToManualMarkdown(bloques: BloqueConocimiento[]): string {
@@ -277,15 +285,22 @@ export async function reindexarConocimientoPropiedad(
     throw new Error('No hay contenido para indexar.')
   }
 
-  const { error: borradorError } = await supabase
+  const { data: actualizada, error: borradorError } = await supabase
     .from('propiedades')
     .update({
       borrador_texto: manualMarkdown,
       guia_local_tarjetas: tarjetas,
     })
     .eq('id', propiedadId)
+    .select('id')
+    .maybeSingle()
 
   if (borradorError) throw borradorError
+  if (!actualizada) {
+    throw new Error(
+      'No se pudo guardar el borrador en la propiedad. Comprueba que tienes permiso de edición.',
+    )
+  }
 
   await eliminarVectoresPropiedad(propiedadId)
 
@@ -305,6 +320,25 @@ export async function guardarSoloGuiaLocal(
 ): Promise<void> {
   const bloques = await listarBloquesConocimiento(propiedadId)
   await reindexarConocimientoPropiedad(propiedadId, bloques, tarjetas, signal)
+}
+
+export async function reprocesarGuiaLocalPorUbicacion(
+  propiedadId: string,
+  direccionCompleta: string,
+  signal?: AbortSignal,
+): Promise<TarjetaGuiaLocal[]> {
+  const nuevasTarjetas = await generarTarjetasGuiaLocal(
+    direccionCompleta,
+    signal,
+  )
+  const bloques = await listarBloquesConocimiento(propiedadId)
+  await reindexarConocimientoPropiedad(
+    propiedadId,
+    bloques,
+    nuevasTarjetas,
+    signal,
+  )
+  return nuevasTarjetas
 }
 
 export async function guardarSoloBaseConocimiento(

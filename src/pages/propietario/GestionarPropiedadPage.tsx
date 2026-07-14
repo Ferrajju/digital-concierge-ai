@@ -9,6 +9,7 @@ import {
   obtenerPropietarioId,
 } from '../../services/propiedadService'
 import BaseConocimientoEditor from './components/BaseConocimientoEditor'
+import ConfigPropiedadPanel from './components/ConfigPropiedadPanel'
 import GuiaLocalGestionPanel from './components/GuiaLocalGestionPanel'
 import type { VistaGestion } from './types/gestionConocimiento'
 
@@ -110,8 +111,8 @@ export default function GestionarPropiedadPage() {
           </h1>
           {vista === 'hub' && (
             <p className="mt-2 text-sm text-slate-400">
-              Administra la base de conocimiento y las recomendaciones locales
-              indexadas para el conserje.
+              Administra la base de conocimiento, las recomendaciones locales y
+              la configuración del agente y alojamiento.
             </p>
           )}
         </header>
@@ -127,7 +128,7 @@ export default function GestionarPropiedadPage() {
             <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-indigo-500/20 border-t-indigo-400" />
           </div>
         ) : vista === 'hub' ? (
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <button
               type="button"
               onClick={() => setVista('conocimiento')}
@@ -167,16 +168,42 @@ export default function GestionarPropiedadPage() {
                 {totalTarjetas} tarjetas indexadas →
               </p>
             </button>
+
+            <button
+              type="button"
+              onClick={() => setVista('config')}
+              className="group rounded-2xl border border-slate-800 bg-slate-900/60 p-6 text-left transition-all hover:border-violet-500/40 hover:shadow-lg hover:shadow-violet-500/10 sm:col-span-2 lg:col-span-1"
+            >
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/15 text-2xl ring-1 ring-violet-500/30">
+                ⚙️
+              </div>
+              <h2 className="text-lg font-semibold text-white group-hover:text-violet-100">
+                Agente y alojamiento
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-slate-400">
+                Nombre y personalidad del agente IA, nombre del apartamento y
+                ubicación. Si cambias la dirección, se regenera la guía local.
+              </p>
+              <p className="mt-4 text-xs font-medium text-violet-300">
+                Configuración general →
+              </p>
+            </button>
           </div>
         ) : vista === 'conocimiento' ? (
           <BaseConocimientoEditor
             propiedadId={propiedadId}
             onVolver={volverAlHub}
           />
-        ) : (
+        ) : vista === 'guia' ? (
           <GuiaLocalGestionPanel
             propiedadId={propiedadId}
             onVolver={volverAlHub}
+          />
+        ) : (
+          <ConfigPropiedadPanel
+            propiedadId={propiedadId}
+            onVolver={volverAlHub}
+            onActualizado={setNombrePropiedad}
           />
         )}
       </div>

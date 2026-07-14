@@ -1,5 +1,10 @@
 import { supabase } from './supabaseClient'
 import type { PropiedadResumen } from '../pages/propietario/types/propiedadDashboard'
+import type {
+  ConfigPropiedadForm,
+  ConfigPropiedadGuardada,
+  EstiloAgente,
+} from '../pages/propietario/types/configPropiedad'
 
 export async function obtenerPropietarioId(): Promise<string> {
   const {
@@ -95,12 +100,19 @@ export async function guardarBorradorPropiedad(
   propiedadId: string,
   borrador: string,
 ): Promise<void> {
-  const { error } = await supabase
+  const { data: actualizada, error } = await supabase
     .from('propiedades')
     .update({ borrador_texto: borrador })
     .eq('id', propiedadId)
+    .select('id')
+    .maybeSingle()
 
   if (error) throw error
+  if (!actualizada) {
+    throw new Error(
+      'No se pudo guardar el borrador. Comprueba que tienes permiso de edición.',
+    )
+  }
 }
 
 export type AlertasPropiedadConfig = {
@@ -118,15 +130,22 @@ export async function guardarAlertasPropiedad(
   propiedadId: string,
   alertas: AlertasPropiedadConfig,
 ): Promise<void> {
-  const { error } = await supabase
+  const { data: actualizada, error } = await supabase
     .from('propiedades')
     .update({
       permiso_modo_alerta: alertas.activas,
       alertas_config: alertas,
     })
     .eq('id', propiedadId)
+    .select('id')
+    .maybeSingle()
 
   if (error) throw error
+  if (!actualizada) {
+    throw new Error(
+      'No se pudieron guardar las alertas. Comprueba que tienes permiso de edición.',
+    )
+  }
 }
 
 export async function obtenerTelegramPropietario(): Promise<string> {
@@ -152,6 +171,160 @@ function formatearDireccionPropiedad(
   if (piso?.trim()) partes.push(piso.trim())
   if (cp.trim()) partes.push(cp.trim())
   return partes.filter(Boolean).join(', ')
+}
+
+export function construirDireccionCompletaConfig(
+  config: Pick<
+    ConfigPropiedadForm,
+    'direccionCalle' | 'pisoPuerta' | 'codigoPostal' | 'ciudadRegion'
+  >,
+): string {
+  const partes = [
+    config.direccionCalle.trim(),
+    config.pisoPuerta.trim(),
+    config.codigoPostal.trim(),
+    config.ciudadRegion.trim(),
+  ].filter(Boolean)
+
+  return partes.join(', ')
+}
+
+export function ubicacionCambioAfectaGuia(
+  original: ConfigPropiedadForm,
+  actualizada: ConfigPropiedadForm,
+): boolean {
+  return (
+    original.direccionCalle.trim() !== actualizada.direccionCalle.trim() ||
+    original.pisoPuerta.trim() !== actualizada.pisoPuerta.trim() ||
+    original.codigoPostal.trim() !== actualizada.codigoPostal.trim() ||
+    original.ciudadRegion.trim() !== actualizada.ciudadRegion.trim()
+  )
+}
+
+export async function obtenerConfiguracionPropiedad(
+  propiedadId: string,
+): Promise<ConfigPropiedadGuardada> {
+  await obtenerPropietarioId()
+
+  const { data, error } = await supabase
+    .from('propiedades')
+    .select(
+      `
+      id,
+      zona_id,
+      nombre_apartamento,
+      ia_identidad,
+      ia_elegancia,
+      ia_expresividad,
+      direccion_calle,
+      piso_puerta,
+      codigo_postal,
+      indicaciones_acceso,
+      zonas ( ubicacion_base )
+    `,
+    )
+    .eq('id', propiedadId)
+    .maybeSingle()
+
+  if (error) throw error
+  if (!data) {
+    throw new Error('Propiedad no encontrada o no tienes acceso.')
+  }
+
+  const zonaRaw = data.zonas as
+    | { ubicacion_base: string | null }
+    | { ubicacion_base: string | null }[]
+    | null
+  const zona = Array.isArray(zonaRaw) ? zonaRaw[0] : zonaRaw
+  const ciudadRegion = (zona?.ubicacion_base ?? '').trim()
+  const direccionCalle = (data.direccion_calle ?? '').trim()
+  const pisoPuerta = (data.piso_puerta ?? '').trim()
+  const codigoPostal = (data.codigo_postal ?? '').trim()
+
+  const busquedaRapida = construirDireccionCompletaConfig({
+    direccionCalle,
+    pisoPuerta,
+    codigoPostal,
+    ciudadRegion,
+  })
+
+  const eleganciaRaw = (data.ia_elegancia ?? 'cercano').trim()
+  const iaElegancia = (
+    ['cercano', 'formal', 'relajado', 'entusiasta', 'discreto'].includes(
+      eleganciaRaw,
+    )
+      ? eleganciaRaw
+      : 'cercano'
+  ) as EstiloAgente
+
+  return {
+    zonaId: data.zona_id,
+    nombreApartamento: data.nombre_apartamento ?? '',
+    nombreIa: data.ia_identidad ?? '',
+    iaElegancia,
+    iaExpresividad:
+      typeof data.ia_expresividad === 'number'
+        ? Math.min(5, Math.max(1, data.ia_expresividad))
+        : 3,
+    busquedaRapida,
+    direccionCalle,
+    pisoPuerta,
+    codigoPostal,
+    ciudadRegion,
+    indicacionesAcceso: (data.indicaciones_acceso ?? '').trim(),
+  }
+}
+
+export async function actualizarConfiguracionPropiedad(
+  propiedadId: string,
+  config: ConfigPropiedadForm,
+  zonaId: string,
+): Promise<void> {
+  await obtenerPropietarioId()
+
+  const ciudadRegion = config.ciudadRegion.trim()
+
+  const { data: propiedadActualizada, error: propiedadError } = await supabase
+    .from('propiedades')
+    .update({
+      nombre_apartamento: config.nombreApartamento.trim(),
+      ia_identidad: config.nombreIa.trim(),
+      ia_elegancia: config.iaElegancia,
+      ia_expresividad: config.iaExpresividad,
+      direccion_calle: config.direccionCalle.trim(),
+      piso_puerta: config.pisoPuerta.trim() || null,
+      codigo_postal: config.codigoPostal.trim(),
+      indicaciones_acceso: config.indicacionesAcceso.trim() || null,
+    })
+    .eq('id', propiedadId)
+    .select('id')
+    .maybeSingle()
+
+  if (propiedadError) throw propiedadError
+  if (!propiedadActualizada) {
+    throw new Error(
+      'No se pudo guardar la configuración. Comprueba que tienes permiso de edición.',
+    )
+  }
+
+  if (ciudadRegion) {
+    const { data: zonaActualizada, error: zonaError } = await supabase
+      .from('zonas')
+      .update({
+        ubicacion_base: ciudadRegion,
+        nombre_zona: ciudadRegion,
+      })
+      .eq('id', zonaId)
+      .select('id')
+      .maybeSingle()
+
+    if (zonaError) throw zonaError
+    if (!zonaActualizada) {
+      throw new Error(
+        'No se pudo actualizar la zona. Comprueba que tienes permiso de edición.',
+      )
+    }
+  }
 }
 
 export async function listarPropiedadesPropietario(): Promise<PropiedadResumen[]> {
