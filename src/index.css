@@ -6,4 +6,33 @@
   body {
     @apply antialiased;
   }
+
+  body.guest-chat-active {
+    @apply overflow-hidden bg-[#0b141a];
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@layer components {
+  .guest-chat-shell {
+    @apply fixed inset-0 flex flex-col bg-[#0b141a] text-slate-100;
+    height: 100dvh;
+    height: 100svh;
+  }
+
+  .guest-chat-header {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .guest-chat-messages {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  .guest-chat-footer {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+    transform: translateY(calc(-1 * var(--guest-keyboard-offset, 0px)));
+    transition: transform 0.2s ease;
+  }
 }
