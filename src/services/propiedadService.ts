@@ -3,8 +3,8 @@ import type { PropiedadResumen } from '../pages/propietario/types/propiedadDashb
 import type {
   ConfigPropiedadForm,
   ConfigPropiedadGuardada,
-  EstiloAgente,
 } from '../pages/propietario/types/configPropiedad'
+import { normalizarPersonalidadAgente } from '../pages/propietario/types/configPropiedad'
 
 export async function obtenerPropietarioId(): Promise<string> {
   const {
@@ -249,23 +249,21 @@ export async function obtenerConfiguracionPropiedad(
   })
 
   const eleganciaRaw = (data.ia_elegancia ?? 'cercano').trim()
-  const iaElegancia = (
-    ['cercano', 'formal', 'relajado', 'entusiasta', 'discreto'].includes(
-      eleganciaRaw,
-    )
-      ? eleganciaRaw
-      : 'cercano'
-  ) as EstiloAgente
+  const expresividadRaw =
+    typeof data.ia_expresividad === 'number'
+      ? Math.min(5, Math.max(1, data.ia_expresividad))
+      : 3
+  const { iaElegancia, iaExpresividad } = normalizarPersonalidadAgente(
+    eleganciaRaw,
+    expresividadRaw,
+  )
 
   return {
     zonaId: data.zona_id,
     nombreApartamento: data.nombre_apartamento ?? '',
     nombreIa: data.ia_identidad ?? '',
     iaElegancia,
-    iaExpresividad:
-      typeof data.ia_expresividad === 'number'
-        ? Math.min(5, Math.max(1, data.ia_expresividad))
-        : 3,
+    iaExpresividad,
     busquedaRapida,
     direccionCalle,
     pisoPuerta,

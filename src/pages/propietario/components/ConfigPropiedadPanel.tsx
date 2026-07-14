@@ -10,9 +10,11 @@ import {
 import { useGoogleMaps } from '../../../providers/GoogleMapsProvider'
 import type { ParsedAddress } from '../../../utils/parseGooglePlace'
 import {
-  ESTILOS_AGENTE,
+  PERSONALIDADES_AGENTE,
+  resolverPersonalidadAgente,
   type ConfigPropiedadForm,
   type ConfigPropiedadGuardada,
+  type PersonalidadAgenteId,
 } from '../types/configPropiedad'
 
 const inputClassName =
@@ -203,6 +205,20 @@ export default function ConfigPropiedadPanel({
   const cambioUbicacionPendiente =
     original && form ? ubicacionCambioAfectaGuia(original, form) : false
 
+  const personalidadSeleccionada: PersonalidadAgenteId = form
+    ? resolverPersonalidadAgente(form.iaElegancia, form.iaExpresividad)
+    : 'acogedor'
+
+  const seleccionarPersonalidad = (id: PersonalidadAgenteId) => {
+    const personalidad = PERSONALIDADES_AGENTE.find((item) => item.id === id)
+    if (!personalidad) return
+
+    updateForm({
+      iaElegancia: personalidad.iaElegancia,
+      iaExpresividad: personalidad.iaExpresividad,
+    })
+  }
+
   if (cargando || !form) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
@@ -237,7 +253,7 @@ export default function ConfigPropiedadPanel({
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-5">
           <div>
             <label
               htmlFor="nombre-agente"
@@ -252,59 +268,60 @@ export default function ConfigPropiedadPanel({
               onChange={(e) => updateForm({ nombreIa: e.target.value })}
               disabled={guardando}
               placeholder="Ej: Marco"
-              className={`mt-2 ${inputClassName}`}
+              className={`mt-2 max-w-md ${inputClassName}`}
             />
           </div>
 
           <div>
-            <label
-              htmlFor="estilo-agente"
-              className="block text-sm font-medium text-slate-300"
-            >
-              Estilo / personalidad
-            </label>
-            <select
-              id="estilo-agente"
-              value={form.iaElegancia}
-              onChange={(e) =>
-                updateForm({
-                  iaElegancia: e.target.value as ConfigPropiedadForm['iaElegancia'],
-                })
-              }
-              disabled={guardando}
-              className={`mt-2 ${inputClassName}`}
-            >
-              {ESTILOS_AGENTE.map((estilo) => (
-                <option key={estilo.value} value={estilo.value}>
-                  {estilo.label}
-                </option>
-              ))}
-            </select>
-          </div>
+            <p className="text-sm font-medium text-slate-300">
+              Personalidad del conserje
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Elige el tono que mejor encaje con tu tipo de alojamiento y
+              propietario.
+            </p>
 
-          <div className="sm:col-span-2">
-            <label
-              htmlFor="expresividad-agente"
-              className="block text-sm font-medium text-slate-300"
-            >
-              Expresividad ({form.iaExpresividad}/5)
-            </label>
-            <input
-              id="expresividad-agente"
-              type="range"
-              min={1}
-              max={5}
-              step={1}
-              value={form.iaExpresividad}
-              onChange={(e) =>
-                updateForm({ iaExpresividad: Number(e.target.value) })
-              }
-              disabled={guardando}
-              className="mt-3 w-full accent-indigo-500"
-            />
-            <div className="mt-1 flex justify-between text-xs text-slate-500">
-              <span>Más sobrio</span>
-              <span>Más expresivo</span>
+            <div className="mt-4 grid gap-3 lg:grid-cols-3">
+              {PERSONALIDADES_AGENTE.map((personalidad) => {
+                const seleccionada = personalidadSeleccionada === personalidad.id
+
+                return (
+                  <button
+                    key={personalidad.id}
+                    type="button"
+                    disabled={guardando}
+                    onClick={() => seleccionarPersonalidad(personalidad.id)}
+                    className={`rounded-2xl border p-4 text-left transition-all disabled:opacity-60 ${
+                      seleccionada
+                        ? 'border-indigo-500/60 bg-indigo-500/10 shadow-lg shadow-indigo-500/10 ring-1 ring-indigo-500/40'
+                        : 'border-slate-800 bg-slate-950/40 hover:border-slate-700 hover:bg-slate-900/60'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="text-2xl" aria-hidden>
+                        {personalidad.icono}
+                      </span>
+                      {seleccionada && (
+                        <span className="rounded-full bg-indigo-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-indigo-300">
+                          Activa
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="mt-3 text-sm font-semibold text-white">
+                      {personalidad.titulo}
+                    </h3>
+                    <p className="mt-1 text-xs font-medium text-indigo-300/90">
+                      {personalidad.subtitulo}
+                    </p>
+                    <p className="mt-2 text-xs leading-relaxed text-slate-400">
+                      {personalidad.descripcion}
+                    </p>
+                    <p className="mt-3 text-[11px] text-slate-500">
+                      {personalidad.perfilPropietario}
+                    </p>
+                  </button>
+                )
+              })}
             </div>
           </div>
         </div>

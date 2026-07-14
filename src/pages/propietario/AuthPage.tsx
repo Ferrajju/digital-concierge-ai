@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import Button from '../../components/ui/Button'
+import Card from '../../components/ui/Card'
+import { inputClassName } from '../../components/ui/inputClassName'
 import { supabase } from '../../services/supabaseClient'
 
 const MIN_PASSWORD_LENGTH = 6
@@ -141,43 +144,38 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-6 py-12 text-slate-100">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-32 top-0 h-96 w-96 rounded-full bg-indigo-600/20 blur-3xl" />
-        <div className="absolute -right-32 bottom-0 h-96 w-96 rounded-full bg-violet-600/15 blur-3xl" />
-        <div className="absolute left-1/2 top-1/3 h-64 w-64 -translate-x-1/2 rounded-full bg-blue-500/10 blur-3xl" />
-      </div>
-
-      <div className="relative z-10 w-full max-w-md animate-fade-in-up">
+    <div className="flex min-h-screen items-center justify-center bg-host-bg px-6 py-12">
+      <div className="w-full max-w-md animate-fade-in-up">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-sm font-bold shadow-lg shadow-indigo-500/30">
+          <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-host-primary text-sm font-bold text-white shadow-sm">
             DC
           </div>
-          <h1 className="text-3xl font-semibold tracking-tight text-white">
-            Digital Concierge AI
+          <h1 className="font-display text-3xl font-semibold tracking-tight text-host-text">
+            Digital Concierge
           </h1>
-          <p className="mt-3 text-sm leading-relaxed text-slate-400">
+          <p className="mt-3 text-sm leading-relaxed text-host-muted">
+            Tu conserje digital para apartamentos turísticos.
             {isLogin
-              ? 'Accede a tu panel y gestiona la experiencia de tus huéspedes.'
-              : 'Crea tu cuenta y configura tu asistente inteligente en minutos.'}
+              ? ' Accede a tu panel de gestión.'
+              : ' Crea tu cuenta y configura tu primer alojamiento.'}
           </p>
         </div>
 
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 backdrop-blur-sm sm:p-8">
-          <h2 className="text-lg font-semibold text-white">
-            {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
+        <Card padding="lg">
+          <h2 className="font-display text-lg font-semibold text-host-text">
+            {isLogin ? 'Iniciar sesión' : 'Crear cuenta'}
           </h2>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-host-muted">
             {isLogin
               ? 'Introduce tus credenciales para continuar.'
-              : 'Empieza tu viaje como propietario.'}
+              : 'Empieza a automatizar la atención a tus huéspedes.'}
           </p>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-slate-300"
+                className="block text-sm font-medium text-stone-700"
               >
                 Email
               </label>
@@ -189,14 +187,14 @@ export default function AuthPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="tu@email.com"
                 disabled={loading}
-                className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950/80 px-4 py-3.5 text-white placeholder:text-slate-600 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50"
+                className={`mt-2 ${inputClassName}`}
               />
             </div>
 
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-slate-300"
+                className="block text-sm font-medium text-stone-700"
               >
                 Contraseña
               </label>
@@ -208,52 +206,45 @@ export default function AuthPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Mínimo 6 caracteres"
                 disabled={loading}
-                className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950/80 px-4 py-3.5 text-white placeholder:text-slate-600 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50"
+                className={`mt-2 ${inputClassName}`}
               />
             </div>
 
             {error && (
-              <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+              <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                 {error}
               </div>
             )}
 
             {success && (
-              <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
                 {success}
               </div>
             )}
 
-            <button
+            <Button
               type="submit"
+              fullWidth
+              size="lg"
+              loading={loading}
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all duration-300 hover:from-indigo-400 hover:to-violet-500 hover:shadow-indigo-500/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {loading ? (
-                <>
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                  Cargando...
-                </>
-              ) : isLogin ? (
-                'Iniciar Sesión'
-              ) : (
-                'Crear Cuenta'
-              )}
-            </button>
+              {isLogin ? 'Iniciar sesión' : 'Crear cuenta'}
+            </Button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-slate-500">
+          <p className="mt-6 text-center text-sm text-host-muted">
             {isLogin ? '¿Aún no tienes cuenta?' : '¿Ya tienes cuenta?'}{' '}
             <button
               type="button"
               onClick={toggleMode}
               disabled={loading}
-              className="font-medium text-indigo-400 transition-colors hover:text-indigo-300 disabled:opacity-50"
+              className="font-semibold text-host-primary transition-colors hover:text-teal-800 disabled:opacity-50"
             >
-              {isLogin ? 'Crear Cuenta' : 'Iniciar Sesión'}
+              {isLogin ? 'Crear cuenta' : 'Iniciar sesión'}
             </button>
           </p>
-        </div>
+        </Card>
       </div>
     </div>
   )

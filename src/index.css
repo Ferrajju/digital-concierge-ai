@@ -4,11 +4,11 @@
 
 @layer base {
   body {
-    @apply antialiased;
+    @apply bg-host-bg font-sans text-host-text antialiased;
   }
 
   body.guest-chat-active {
-    @apply overflow-hidden bg-[#0b141a];
+    @apply overflow-hidden bg-[#0b141a] text-slate-100;
     overscroll-behavior: none;
     -webkit-tap-highlight-color: transparent;
   }
