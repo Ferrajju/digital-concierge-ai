@@ -2,17 +2,17 @@ export function formatConocimientoUnificado(
   manual: string,
   guiaLocal: string,
 ): string {
-  const bloques: string[] = []
+  const partes: string[] = []
 
   const manualLimpio = manual.trim()
   if (manualLimpio) {
-    bloques.push(`# Manual del Alojamiento\n\n${manualLimpio}`)
+    partes.push(manualLimpio)
   }
 
   const guiaLimpia = guiaLocal.trim()
   if (guiaLimpia) {
-    bloques.push(`# Guía Local de Recomendaciones\n\n${guiaLimpia}`)
+    partes.push(`# Guía Local de Recomendaciones\n\n${guiaLimpia}`)
   }
 
-  return bloques.join('\n\n')
+  return partes.join('\n\n')
 }

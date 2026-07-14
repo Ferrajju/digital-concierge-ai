@@ -7,6 +7,43 @@ import { formatConocimientoUnificado } from '../utils/formatConocimientoUnificad
 import { formatGuiaLocalMarkdown } from '../utils/formatGuiaLocalMarkdown'
 
 const ES_CHUNK_GUIA = /## Guia de recomendacion/i
+const ES_CHUNK_ENCABEZADO =
+  /^#\s*(Manual del Alojamiento|Guía Local de Recomendaciones|Guia Local de Recomendaciones)\s*$/i
+
+function normalizarManualParaEdicion(manual: string): string {
+  return manual
+    .trim()
+    .replace(/^#\s+Manual del Alojamiento\s*\n+/i, '')
+    .replace(/^#\s+🏠[^\n]*\n+/m, '')
+}
+
+export function parseManualMarkdownToBloques(manual: string): BloqueConocimiento[] {
+  const texto = normalizarManualParaEdicion(manual)
+  if (!texto) return []
+
+  const secciones = texto
+    .split(/(?=^## )/m)
+    .map((seccion) => seccion.trim())
+    .filter(Boolean)
+
+  return secciones.map((seccion, index) => {
+    const { titulo, contenido } = parseTituloYContenido(seccion)
+    return {
+      id: null,
+      titulo,
+      contenido,
+      chunkIndex: index,
+      esNuevo: false,
+    }
+  })
+}
+
+function esChunkManualEditable(content: string): boolean {
+  if (ES_CHUNK_GUIA.test(content)) return false
+  if (ES_CHUNK_ENCABEZADO.test(content.trim())) return false
+  if (/^#\s+Manual del Alojamiento\s*$/im.test(content.trim())) return false
+  return true
+}
 
 type ChunkRow = {
   id: number
@@ -120,10 +157,25 @@ async function listarChunksPropiedad(propiedadId: string): Promise<ChunkRow[]> {
 export async function listarBloquesConocimiento(
   propiedadId: string,
 ): Promise<BloqueConocimiento[]> {
+  await obtenerPropietarioId()
+
+  const { data, error } = await supabase
+    .from('propiedades')
+    .select('borrador_texto')
+    .eq('id', propiedadId)
+    .maybeSingle()
+
+  if (error) throw error
+
+  const borrador = (data?.borrador_texto ?? '').trim()
+  if (borrador) {
+    return parseManualMarkdownToBloques(borrador)
+  }
+
   const chunks = await listarChunksPropiedad(propiedadId)
 
   return chunks
-    .filter((chunk) => !ES_CHUNK_GUIA.test(chunk.content))
+    .filter((chunk) => esChunkManualEditable(chunk.content))
     .map((chunk) => {
       const { titulo, contenido } = parseTituloYContenido(chunk.content)
       const chunkIndex =
@@ -259,9 +311,10 @@ export async function guardarSoloBaseConocimiento(
   propiedadId: string,
   bloques: BloqueConocimiento[],
   signal?: AbortSignal,
-): Promise<void> {
+): Promise<BloqueConocimiento[]> {
   const tarjetas = await listarTarjetasGuiaPropiedad(propiedadId)
   await reindexarConocimientoPropiedad(propiedadId, bloques, tarjetas, signal)
+  return bloques
 }
 
 export function crearBloqueVacio(): BloqueConocimiento {

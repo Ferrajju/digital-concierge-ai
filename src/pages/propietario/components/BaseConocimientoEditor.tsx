@@ -88,9 +88,12 @@ export default function BaseConocimientoEditor({
     abortRef.current = controller
 
     try {
-      await guardarSoloBaseConocimiento(propiedadId, bloques, controller.signal)
-      const actualizados = await listarBloquesConocimiento(propiedadId)
-      setBloques(actualizados)
+      const guardados = await guardarSoloBaseConocimiento(
+        propiedadId,
+        bloques,
+        controller.signal,
+      )
+      setBloques(guardados)
       setMensajeOk('Bloques guardados y embeddings actualizados.')
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return
