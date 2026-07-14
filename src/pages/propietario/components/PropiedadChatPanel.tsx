@@ -1,4 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
+import Button from '../../../components/ui/Button'
+import Card from '../../../components/ui/Card'
+import HostFeedback from '../../../components/ui/HostFeedback'
+import { HostLoading } from '../../../components/ui/HostShell'
+import { inputClassName } from '../../../components/ui/inputClassName'
+import WizardStepShell from '../../../components/ui/WizardStepShell'
 import {
   buildHistorial,
   cargarConversacion,
@@ -171,41 +177,28 @@ export default function PropiedadChatPanel({
   }
 
   if (cargandoHistorial) {
-    return (
-      <div className="flex min-h-[420px] items-center justify-center">
-        <div className="text-center">
-          <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-[3px] border-indigo-500/20 border-t-indigo-400" />
-          <p className="text-sm text-slate-400">Cargando conversación...</p>
-        </div>
-      </div>
-    )
+    return <HostLoading label="Cargando conversación..." />
   }
 
   return (
-    <>
-      <div className="mb-6 text-center sm:text-left">
-        <p className="text-sm font-medium uppercase tracking-[0.2em] text-indigo-400">
-          Paso 4 de 7 · Entrevista con {nombreIa}
-        </p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-          Configura {nombreVivienda}
-        </h1>
-        <p className="mt-2 text-sm text-slate-400">
-          Cuéntale a {nombreIa} todo lo que un huésped necesita saber: accesos,
-          Wi-Fi, normas y más.
-        </p>
-      </div>
+    <WizardStepShell
+      paso={4}
+      title={`Configura ${nombreVivienda}`}
+      description={
+        <>
+          Entrevista con{' '}
+          <span className="font-semibold text-host-primary">{nombreIa}</span>.
+          Cuéntale todo lo que un huésped necesita saber: accesos, Wi-Fi, normas
+          y más.
+        </>
+      }
+    >
+      {error && <HostFeedback className="mb-4">{error}</HostFeedback>}
 
-      {error && (
-        <div className="mb-4 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
-          {error}
-        </div>
-      )}
-
-      <div className="flex h-[calc(100vh-14rem)] min-h-[480px] flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60 backdrop-blur-sm">
+      <Card padding="none" className="overflow-hidden">
         <div
           ref={chatContainerRef}
-          className="flex-1 space-y-4 overflow-y-auto px-5 py-6 sm:px-6"
+          className="flex h-[calc(100vh-20rem)] min-h-[420px] flex-col gap-3 overflow-y-auto bg-stone-50/50 px-4 py-5 sm:px-6"
         >
           {mensajes.map((mensaje) => (
             <div
@@ -216,28 +209,30 @@ export default function PropiedadChatPanel({
                   : 'justify-start'
               }`}
             >
-              <div
-                className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed sm:max-w-[75%] ${
-                  mensaje.remitente === 'propietario'
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-slate-800 text-slate-200 ring-1 ring-slate-700'
-                }`}
-              >
-                {mensaje.remitente === 'ia' && (
-                  <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-indigo-400">
-                    {nombreIa}
-                  </p>
-                )}
-                {mensaje.texto}
+              <div className="max-w-[85%] sm:max-w-[75%]">
+                <div
+                  className={`rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${
+                    mensaje.remitente === 'propietario'
+                      ? 'rounded-br-md bg-host-primary text-white'
+                      : 'rounded-bl-md border border-stone-200 bg-white text-host-text'
+                  }`}
+                >
+                  {mensaje.remitente === 'ia' && (
+                    <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-host-primary">
+                      {nombreIa}
+                    </p>
+                  )}
+                  {mensaje.texto}
+                </div>
               </div>
             </div>
           ))}
 
           {escribiendo && (
             <div className="flex justify-start">
-              <div className="rounded-2xl bg-slate-800 px-4 py-3 ring-1 ring-slate-700">
-                <p className="text-xs text-slate-400">
-                  La IA está escribiendo y tomando notas...
+              <div className="rounded-2xl border border-stone-200 bg-white px-4 py-3 shadow-sm">
+                <p className="text-xs text-host-muted">
+                  {nombreIa} está escribiendo y tomando notas...
                 </p>
               </div>
             </div>
@@ -248,7 +243,7 @@ export default function PropiedadChatPanel({
 
         <form
           onSubmit={handleEnviar}
-          className="border-t border-slate-800 bg-slate-950/50 p-4 sm:p-5"
+          className="border-t border-stone-200 bg-white p-4 sm:p-5"
         >
           <div className="flex flex-col gap-3 sm:flex-row">
             <input
@@ -262,18 +257,18 @@ export default function PropiedadChatPanel({
                   : 'Describe tu alojamiento libremente...'
               }
               disabled={chatBloqueado}
-              className="flex-1 rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-white placeholder:text-slate-600 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50"
+              className={`flex-1 ${inputClassName}`}
             />
-            <button
+            <Button
               type="submit"
               disabled={!input.trim() || chatBloqueado}
-              className="shrink-0 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all duration-300 hover:from-indigo-400 hover:to-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
+              className="shrink-0"
             >
-              Enviar información
-            </button>
+              Enviar
+            </Button>
           </div>
         </form>
-      </div>
-    </>
+      </Card>
+    </WizardStepShell>
   )
 }

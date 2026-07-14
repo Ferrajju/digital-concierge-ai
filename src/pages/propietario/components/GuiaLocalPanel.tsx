@@ -1,4 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import Button from '../../../components/ui/Button'
+import FormSection, { FieldGroup } from '../../../components/ui/FormSection'
+import HostFeedback from '../../../components/ui/HostFeedback'
+import { HostOverlayLoading } from '../../../components/ui/HostModal'
+import { HostLoading } from '../../../components/ui/HostShell'
+import { inputClassName } from '../../../components/ui/inputClassName'
+import WizardStepShell, { WizardActions } from '../../../components/ui/WizardStepShell'
 import { inyectarConocimientoFlujo3 } from '../../../services/n8nService'
 import { generarTarjetasGuiaLocal } from '../../../services/guiaLocalService'
 import { obtenerBorradorPropiedad } from '../../../services/propiedadService'
@@ -11,9 +18,6 @@ import {
   type CategoriaGuiaLocal,
   type TarjetaGuiaLocal,
 } from '../types/guiaLocal'
-
-const inputClassName =
-  'w-full rounded-xl border border-slate-700 bg-slate-950/80 px-4 py-3 text-sm text-white placeholder:text-slate-600 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50'
 
 type GuiaLocalPanelProps = {
   propiedadId: string
@@ -165,215 +169,175 @@ export default function GuiaLocalPanel({
   }))
 
   return (
-    <div className="animate-fade-in-up">
-      <div className="mb-8 text-center sm:mb-10">
-        <p className="text-sm font-medium uppercase tracking-[0.2em] text-indigo-400">
-          Paso 6 de 7
-        </p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-          Guía Local de {nombreVivienda}
-        </h1>
-        <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-slate-400">
-          Hemos buscado supermercados, farmacias y restaurantes cerca de tu
-          alojamiento. Revisa, edita o añade recomendaciones. Al finalizar,
-          indexaremos el manual y la guía juntos en una sola operación.
-        </p>
-        <p className="mx-auto mt-2 max-w-xl text-xs text-slate-500">
+    <>
+      <WizardStepShell
+        paso={6}
+        title={`Guía Local de ${nombreVivienda}`}
+        description="Hemos buscado supermercados, farmacias y restaurantes cerca de tu alojamiento. Revisa, edita o añade recomendaciones. Al finalizar, indexaremos el manual y la guía juntos."
+      >
+        <p className="-mt-4 mb-6 rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm font-medium text-stone-600">
           📍 {direccionCompleta}
         </p>
-      </div>
 
-      {error && (
-        <div className="mb-6 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
-          {error}
-        </div>
-      )}
+        {error && <HostFeedback className="mb-6">{error}</HostFeedback>}
 
-      {mostrarCarga ? (
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-10 text-center backdrop-blur-sm">
-          <div className="mx-auto mb-5 h-14 w-14 animate-spin rounded-full border-[3px] border-indigo-500/20 border-t-indigo-400" />
-          <p className="text-lg font-semibold text-white">
-            Buscando lugares cercanos...
-          </p>
-          <p className="mt-2 text-sm text-slate-400">
-            Google Maps + GPT-4o están generando tus tarjetas de recomendación.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-8">
-          {tarjetasPorCategoria.map(({ id, label, icono, tarjetas: grupo }) => (
-            <section key={id} className="space-y-4">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-300">
-                  <span aria-hidden>{icono}</span>
-                  {label}
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => anadirTarjeta(id)}
-                  disabled={guardando}
-                  className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs text-slate-400 transition-colors hover:border-indigo-500/40 hover:text-indigo-300 disabled:opacity-40"
-                >
-                  + Añadir
-                </button>
-              </div>
-
-              {grupo.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-slate-800 bg-slate-950/40 px-4 py-6 text-center text-sm text-slate-500">
-                  No hay lugares en esta categoría. Pulsa &quot;Añadir&quot; para
-                  crear uno manualmente.
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {grupo.map((tarjeta) => (
-                    <article
-                      key={tarjeta.id}
-                      className={`rounded-2xl border p-5 transition-colors sm:p-6 ${
-                        tarjeta.activa
-                          ? 'border-slate-800 bg-slate-900/60'
-                          : 'border-slate-800/60 bg-slate-950/40 opacity-60'
-                      }`}
-                    >
-                      <div className="mb-4 flex items-start justify-between gap-3">
-                        <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300">
-                          <input
-                            type="checkbox"
-                            checked={tarjeta.activa}
-                            onChange={(e) =>
-                              actualizarTarjeta(tarjeta.id, {
-                                activa: e.target.checked,
-                              })
-                            }
-                            disabled={guardando}
-                            className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-indigo-500 focus:ring-indigo-500"
-                          />
-                          Incluir en la guía
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => eliminarTarjeta(tarjeta.id)}
-                          disabled={guardando}
-                          className="text-xs text-slate-500 transition-colors hover:text-rose-400 disabled:opacity-40"
-                        >
-                          Eliminar
-                        </button>
-                      </div>
-
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="sm:col-span-2">
-                          <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
-                            Nombre del lugar
+        {mostrarCarga ? (
+          <HostLoading label="Buscando lugares cercanos con Google Maps..." />
+        ) : (
+          <div className="space-y-6">
+            {tarjetasPorCategoria.map(({ id, label, icono, tarjetas: grupo }) => (
+              <FormSection
+                key={id}
+                title={`${icono} ${label}`}
+                action={
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => anadirTarjeta(id)}
+                    disabled={guardando}
+                  >
+                    + Añadir
+                  </Button>
+                }
+              >
+                {grupo.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-stone-300 bg-stone-50 px-4 py-6 text-center text-sm font-medium text-host-muted">
+                    No hay lugares en esta categoría. Pulsa &quot;Añadir&quot; para
+                    crear uno manualmente.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {grupo.map((tarjeta) => (
+                      <div
+                        key={tarjeta.id}
+                        className={`rounded-xl border-2 p-4 sm:p-5 ${
+                          tarjeta.activa
+                            ? 'border-stone-200 bg-white'
+                            : 'border-stone-200 bg-stone-50 opacity-70'
+                        }`}
+                      >
+                        <div className="mb-4 flex items-start justify-between gap-3">
+                          <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-stone-700">
+                            <input
+                              type="checkbox"
+                              checked={tarjeta.activa}
+                              onChange={(e) =>
+                                actualizarTarjeta(tarjeta.id, {
+                                  activa: e.target.checked,
+                                })
+                              }
+                              disabled={guardando}
+                              className="h-4 w-4 rounded border-stone-300 text-host-primary focus:ring-host-primary/30"
+                            />
+                            Incluir en la guía
                           </label>
-                          <input
-                            type="text"
-                            value={tarjeta.nombre}
-                            onChange={(e) =>
-                              actualizarTarjeta(tarjeta.id, {
-                                nombre: e.target.value,
-                              })
-                            }
+                          <button
+                            type="button"
+                            onClick={() => eliminarTarjeta(tarjeta.id)}
                             disabled={guardando}
-                            className={`mt-2 ${inputClassName}`}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
-                            Distancia
-                          </label>
-                          <input
-                            type="text"
-                            value={tarjeta.distancia}
-                            onChange={(e) =>
-                              actualizarTarjeta(tarjeta.id, {
-                                distancia: e.target.value,
-                              })
-                            }
-                            placeholder="Ej: A 5 min andando"
-                            disabled={guardando}
-                            className={`mt-2 ${inputClassName}`}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
-                            Categoría
-                          </label>
-                          <select
-                            value={tarjeta.categoria}
-                            onChange={(e) =>
-                              actualizarTarjeta(tarjeta.id, {
-                                categoria: e.target.value as CategoriaGuiaLocal,
-                              })
-                            }
-                            disabled={guardando}
-                            className={`mt-2 ${inputClassName}`}
+                            className="text-xs font-semibold text-host-muted transition-colors hover:text-rose-600 disabled:opacity-40"
                           >
-                            {CATEGORIAS_GUIA.map((categoria) => (
-                              <option key={categoria.id} value={categoria.id}>
-                                {categoria.label}
-                              </option>
-                            ))}
-                          </select>
+                            Eliminar
+                          </button>
                         </div>
-                        <div className="sm:col-span-2">
-                          <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
-                            Información útil
-                          </label>
-                          <textarea
-                            value={tarjeta.informacion}
-                            onChange={(e) =>
-                              actualizarTarjeta(tarjeta.id, {
-                                informacion: e.target.value,
-                              })
-                            }
-                            rows={3}
-                            disabled={guardando}
-                            className={`mt-2 resize-none ${inputClassName}`}
-                          />
+
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <FieldGroup label="Nombre del lugar" className="sm:col-span-2">
+                            <input
+                              type="text"
+                              value={tarjeta.nombre}
+                              onChange={(e) =>
+                                actualizarTarjeta(tarjeta.id, {
+                                  nombre: e.target.value,
+                                })
+                              }
+                              disabled={guardando}
+                              className={inputClassName}
+                            />
+                          </FieldGroup>
+                          <FieldGroup label="Distancia">
+                            <input
+                              type="text"
+                              value={tarjeta.distancia}
+                              onChange={(e) =>
+                                actualizarTarjeta(tarjeta.id, {
+                                  distancia: e.target.value,
+                                })
+                              }
+                              placeholder="Ej: A 5 min andando"
+                              disabled={guardando}
+                              className={inputClassName}
+                            />
+                          </FieldGroup>
+                          <FieldGroup label="Categoría">
+                            <select
+                              value={tarjeta.categoria}
+                              onChange={(e) =>
+                                actualizarTarjeta(tarjeta.id, {
+                                  categoria: e.target.value as CategoriaGuiaLocal,
+                                })
+                              }
+                              disabled={guardando}
+                              className={inputClassName}
+                            >
+                              {CATEGORIAS_GUIA.map((categoria) => (
+                                <option key={categoria.id} value={categoria.id}>
+                                  {categoria.label}
+                                </option>
+                              ))}
+                            </select>
+                          </FieldGroup>
+                          <FieldGroup label="Información útil" className="sm:col-span-2">
+                            <textarea
+                              value={tarjeta.informacion}
+                              onChange={(e) =>
+                                actualizarTarjeta(tarjeta.id, {
+                                  informacion: e.target.value,
+                                })
+                              }
+                              rows={3}
+                              disabled={guardando}
+                              className={`resize-none ${inputClassName}`}
+                            />
+                          </FieldGroup>
                         </div>
                       </div>
-                    </article>
-                  ))}
-                </div>
-              )}
-            </section>
-          ))}
+                    ))}
+                  </div>
+                )}
+              </FormSection>
+            ))}
 
-          <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-between">
-            <button
-              type="button"
-              onClick={cargarTarjetas}
-              disabled={guardando || cargando}
-              className="rounded-xl border border-slate-700 px-5 py-3 text-sm text-slate-400 transition-colors hover:border-slate-600 disabled:opacity-40"
-            >
-              ↻ Regenerar con Google Maps
-            </button>
-            <button
-              type="button"
-              onClick={handleFinalizarYActivar}
-              disabled={guardando}
-              className="rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition-all hover:from-indigo-400 hover:to-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {guardando
-                ? 'Indexando conocimiento...'
-                : 'Finalizar y Activar Conserje'}
-            </button>
+            <WizardActions>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={cargarTarjetas}
+                disabled={guardando || cargando}
+              >
+                ↻ Regenerar con Google Maps
+              </Button>
+              <Button
+                type="button"
+                onClick={handleFinalizarYActivar}
+                loading={guardando}
+                disabled={guardando}
+                size="lg"
+              >
+                Finalizar y activar conserje
+              </Button>
+            </WizardActions>
           </div>
-        </div>
-      )}
+        )}
+      </WizardStepShell>
 
       {guardando && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md">
-          <div className="mx-6 w-full max-w-lg rounded-2xl border border-slate-800 bg-slate-900/90 p-8 text-center shadow-2xl">
-            <div className="mx-auto mb-6 h-14 w-14 animate-spin rounded-full border-[3px] border-indigo-500/20 border-t-indigo-400" />
-            <p className="text-lg font-semibold leading-relaxed text-white">
-              Indexando Manual + Guía Local...
-            </p>
-            <p className="mt-2 text-sm text-slate-400">
-              n8n borrará los vectores antiguos e indexará el bloque unificado.
-            </p>
-          </div>
-        </div>
+        <HostOverlayLoading
+          title="Indexando Manual + Guía Local..."
+          description="n8n borrará los vectores antiguos e indexará el bloque unificado."
+        />
       )}
-    </div>
+    </>
   )
 }

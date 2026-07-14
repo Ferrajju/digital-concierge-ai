@@ -1,4 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import Button from '../../../components/ui/Button'
+import Card from '../../../components/ui/Card'
+import FormSection, { FieldGroup } from '../../../components/ui/FormSection'
+import HostFeedback from '../../../components/ui/HostFeedback'
+import { inputClassName } from '../../../components/ui/inputClassName'
+import WizardStepShell from '../../../components/ui/WizardStepShell'
 import { procesarBorradorFlujo2 } from '../../../services/n8nService'
 import { guardarBorradorPropiedad } from '../../../services/propiedadService'
 import { WIZARD_INICIAL, type WizardValidacionState } from '../types/validacionWizard'
@@ -22,9 +28,6 @@ const ETAPAS_PROCESADO = [
   'Organizando bloques: Wi-Fi, acceso, normas...',
   'Generando tu borrador estructurado...',
 ] as const
-
-const inputClassName =
-  'w-full rounded-xl border border-slate-700 bg-slate-950/80 px-4 py-3.5 text-sm text-white placeholder:text-slate-600 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50'
 
 export default function ValidacionWizard({
   propiedadId,
@@ -128,164 +131,142 @@ export default function ValidacionWizard({
   }
 
   return (
-    <div className="animate-fade-in-up">
-      <div className="mb-8 text-center">
-        <p className="text-sm font-medium uppercase tracking-[0.2em] text-indigo-400">
-          Paso 5 de 7
-        </p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-          {nombreVivienda}
-        </h1>
-        <p className="mt-2 text-sm text-slate-400">
-          Revisa el borrador del manual. Lo indexaremos junto con la Guía Local
-          al final del proceso.
-        </p>
-      </div>
-
-      <div className="mb-8 flex justify-center gap-6">
-        {PASOS.map(({ numero, label }) => {
-          const activo = paso === numero
-          const completado = paso > numero
-          return (
-            <div key={numero} className="flex flex-col items-center gap-1.5">
-              <div
-                className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold transition-all ${
-                  activo
-                    ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/40'
-                    : completado
-                      ? 'bg-indigo-500/20 text-indigo-300 ring-1 ring-indigo-500/40'
-                      : 'bg-slate-800 text-slate-500 ring-1 ring-slate-700'
-                }`}
-              >
-                {completado ? '✓' : numero}
+    <>
+      <WizardStepShell
+        paso={5}
+        title={nombreVivienda}
+        description="Revisa el borrador del manual. Lo indexaremos junto con la Guía Local al final del proceso."
+      >
+        <div className="mb-6 flex justify-center gap-8">
+          {PASOS.map(({ numero, label }) => {
+            const activo = paso === numero
+            const completado = paso > numero
+            return (
+              <div key={numero} className="flex flex-col items-center gap-1.5">
+                <div
+                  className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all ${
+                    activo
+                      ? 'bg-host-primary text-white shadow-sm ring-2 ring-teal-200'
+                      : completado
+                        ? 'bg-teal-50 text-host-primary ring-2 ring-teal-200'
+                        : 'bg-stone-100 text-stone-400 ring-1 ring-stone-200'
+                  }`}
+                >
+                  {completado ? '✓' : numero}
+                </div>
+                <span
+                  className={`text-[10px] font-semibold uppercase tracking-wide ${
+                    activo ? 'text-host-primary' : 'text-stone-400'
+                  }`}
+                >
+                  {label}
+                </span>
               </div>
-              <span
-                className={`text-[10px] font-medium uppercase tracking-wider ${
-                  activo ? 'text-indigo-300' : 'text-slate-600'
-                }`}
-              >
-                {label}
-              </span>
-            </div>
-          )
-        })}
-      </div>
-
-      {error && paso === 2 && (
-        <div className="mb-6 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
-          {error}
+            )
+          })}
         </div>
-      )}
 
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm sm:p-8">
+        {error && paso === 2 && (
+          <HostFeedback className="mb-6">{error}</HostFeedback>
+        )}
+
         {paso === 2 && (
-          <div className="animate-fade-in-up space-y-5">
-            <div>
-              <h2 className="text-lg font-semibold text-white">
-                Borrador editable
-              </h2>
-              <p className="mt-1 text-sm text-slate-400">
-                Corrige cualquier dato del manual (Wi-Fi, normas, accesos...)
-                antes de continuar.
-              </p>
-            </div>
-            <textarea
-              value={wizard.borradorEditado}
-              onChange={(e) =>
-                setWizard((prev) => ({
-                  ...prev,
-                  borradorEditado: e.target.value,
-                }))
-              }
-              rows={16}
-              disabled={guardando}
-              className={`resize-y font-mono text-[13px] leading-relaxed ${inputClassName}`}
-              placeholder="El borrador estructurado aparecerá aquí..."
-            />
-            <div className="flex justify-end">
-              <button
+          <FormSection
+            title="Borrador editable"
+            description="Corrige cualquier dato del manual (Wi-Fi, normas, accesos...) antes de continuar."
+          >
+            <FieldGroup label="Contenido del manual">
+              <textarea
+                value={wizard.borradorEditado}
+                onChange={(e) =>
+                  setWizard((prev) => ({
+                    ...prev,
+                    borradorEditado: e.target.value,
+                  }))
+                }
+                rows={16}
+                disabled={guardando}
+                className={`resize-y font-mono text-[13px] leading-relaxed ${inputClassName}`}
+                placeholder="El borrador estructurado aparecerá aquí..."
+              />
+            </FieldGroup>
+            <div className="flex justify-end pt-2">
+              <Button
                 type="button"
                 onClick={handleSiguienteBorrador}
+                loading={guardando}
                 disabled={!wizard.borradorEditado.trim() || guardando}
-                className="rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all hover:from-indigo-400 hover:to-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
+                size="lg"
               >
-                {guardando ? 'Guardando...' : 'Siguiente → Guía Local'}
-              </button>
+                Siguiente → Guía Local
+              </Button>
             </div>
-          </div>
+          </FormSection>
         )}
-      </div>
+      </WizardStepShell>
 
       {paso === 1 && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 backdrop-blur-md">
-          <div className="relative mx-6 w-full max-w-xl overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/95 p-8 shadow-2xl sm:p-10">
-            <div className="pointer-events-none absolute inset-0 overflow-hidden">
-              <div className="absolute -left-20 -top-20 h-56 w-56 rounded-full bg-indigo-600/20 blur-3xl" />
-              <div className="absolute -bottom-20 -right-20 h-56 w-56 rounded-full bg-violet-600/15 blur-3xl" />
-            </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 p-4 backdrop-blur-sm">
+          <Card padding="lg" className="w-full max-w-xl text-center shadow-card-hover">
+            {isLoading ? (
+              <>
+                <div className="mx-auto mb-6 h-14 w-14 animate-spin rounded-full border-[3px] border-teal-100 border-t-host-primary" />
+                <h2 className="font-display text-xl font-bold text-host-text sm:text-2xl">
+                  ¡Gracias por los datos!
+                </h2>
+                <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-host-muted">
+                  Estamos procesando y estructurando toda la información de tu
+                  alojamiento.
+                </p>
 
-            <div className="relative text-center">
-              {isLoading ? (
-                <>
-                  <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-indigo-500/15 ring-1 ring-indigo-500/30">
-                    <div className="h-12 w-12 animate-spin rounded-full border-[3px] border-indigo-500/20 border-t-indigo-400" />
-                  </div>
-                  <h2 className="text-xl font-semibold text-white sm:text-2xl">
-                    ¡Gracias por los datos!
-                  </h2>
-                  <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-slate-400">
-                    Estamos procesando y estructurando toda la información de tu
-                    alojamiento.
-                  </p>
+                <div className="relative mx-auto mt-8 h-1.5 max-w-xs overflow-hidden rounded-full bg-stone-200">
+                  <div className="absolute inset-y-0 w-1/2 animate-shimmer rounded-full bg-gradient-to-r from-transparent via-teal-400/80 to-transparent" />
+                </div>
 
-                  <div className="relative mx-auto mt-8 h-1.5 max-w-xs overflow-hidden rounded-full bg-slate-800">
-                    <div className="absolute inset-y-0 w-1/2 animate-shimmer rounded-full bg-gradient-to-r from-transparent via-indigo-400/80 to-transparent" />
-                  </div>
+                <p
+                  key={etapaProcesado}
+                  className="mt-6 animate-fade-in-up text-sm font-semibold text-host-primary"
+                >
+                  {ETAPAS_PROCESADO[etapaProcesado]}
+                </p>
 
-                  <p
-                    key={etapaProcesado}
-                    className="mt-6 animate-fade-in-up text-sm font-medium text-indigo-300"
-                  >
-                    {ETAPAS_PROCESADO[etapaProcesado]}
-                  </p>
-
-                  <div className="mt-6 flex justify-center gap-1.5">
-                    {ETAPAS_PROCESADO.map((_, index) => (
-                      <span
-                        key={index}
-                        className={`h-1.5 rounded-full transition-all duration-500 ${
-                          index === etapaProcesado
-                            ? 'w-6 bg-indigo-400'
-                            : 'w-1.5 bg-slate-700'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="mx-auto mb-6 flex h-20 w-20 animate-scale-in items-center justify-center rounded-full bg-rose-500/15 text-3xl ring-1 ring-rose-500/40">
-                    !
-                  </div>
-                  <h2 className="text-xl font-semibold text-white">
-                    No se pudo procesar
-                  </h2>
-                  <p className="mx-auto mt-3 max-w-md text-sm text-slate-400">
-                    {error}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={handleReintentar}
-                    className="mt-8 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 px-8 py-3.5 text-sm font-semibold text-white"
-                  >
-                    Reintentar procesamiento
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
+                <div className="mt-6 flex justify-center gap-1.5">
+                  {ETAPAS_PROCESADO.map((_, index) => (
+                    <span
+                      key={index}
+                      className={`h-1.5 rounded-full transition-all duration-500 ${
+                        index === etapaProcesado
+                          ? 'w-6 bg-host-primary'
+                          : 'w-1.5 bg-stone-300'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-2xl font-bold text-rose-600">
+                  !
+                </div>
+                <h2 className="font-display text-xl font-bold text-host-text">
+                  No se pudo procesar
+                </h2>
+                <p className="mx-auto mt-3 max-w-md text-sm text-host-muted">
+                  {error}
+                </p>
+                <Button
+                  type="button"
+                  onClick={handleReintentar}
+                  className="mt-8"
+                  size="lg"
+                >
+                  Reintentar procesamiento
+                </Button>
+              </>
+            )}
+          </Card>
         </div>
       )}
-    </div>
+    </>
   )
 }
