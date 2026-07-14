@@ -7,6 +7,7 @@ import {
 } from '../../services/huespedService'
 import { enviarMensajeFlujo4 } from '../../services/n8nService'
 import { obtenerSessionIdHuesped } from '../../utils/guestSession'
+import ChatMarkdown from '../../components/ChatMarkdown'
 import type {
   MensajeHuespedChat,
   PropiedadGuestInfo,
@@ -255,7 +256,11 @@ export default function GuestChatPage() {
                     {nombreAgente}
                   </p>
                 )}
-                {mensaje.contenido}
+                {esUsuario ? (
+                  <p className="whitespace-pre-wrap">{mensaje.contenido}</p>
+                ) : (
+                  <ChatMarkdown contenido={mensaje.contenido} />
+                )}
               </div>
             </div>
           )
