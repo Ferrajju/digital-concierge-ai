@@ -2,6 +2,7 @@ import type {
   MensajeHuespedChat,
   PropiedadGuestInfo,
 } from '../pages/huesped/types/guestChat'
+import type { ConversacionHuespedResumen } from '../pages/propietario/types/conversacionesHuesped'
 import { supabase } from './supabaseClient'
 
 const COLUMNAS_PUBLICAS =
@@ -129,4 +130,41 @@ export async function guardarHistorialHuesped(
   })
 
   if (error) throw error
+}
+
+function construirResumenConversacion(row: {
+  id: string
+  session_id: string
+  historial_mensajes: unknown
+  created_at: string
+  updated_at: string
+}): ConversacionHuespedResumen {
+  const mensajes = parseHistorial(row.historial_mensajes)
+  const ultimo = mensajes[mensajes.length - 1]
+
+  return {
+    id: row.id,
+    sessionId: row.session_id,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    totalMensajes: mensajes.length,
+    mensajesUsuario: mensajes.filter((m) => m.rol === 'user').length,
+    ultimoMensaje: ultimo?.contenido ?? 'Sin mensajes',
+    ultimoMensajeRol: ultimo?.rol ?? 'assistant',
+    mensajes,
+  }
+}
+
+export async function listarConversacionesPropiedad(
+  propiedadId: string,
+): Promise<ConversacionHuespedResumen[]> {
+  const { data, error } = await supabase
+    .from('conversaciones_huesped')
+    .select('id, session_id, historial_mensajes, created_at, updated_at')
+    .eq('propiedad_id', propiedadId)
+    .order('updated_at', { ascending: false })
+
+  if (error) throw error
+
+  return (data ?? []).map(construirResumenConversacion)
 }

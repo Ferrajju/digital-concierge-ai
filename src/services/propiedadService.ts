@@ -199,3 +199,26 @@ export async function listarPropiedadesPropietario(): Promise<PropiedadResumen[]
     }
   })
 }
+
+export async function obtenerPropiedadBasicaPropietario(
+  propiedadId: string,
+): Promise<{ id: string; nombreApartamento: string; iaIdentidad: string }> {
+  await obtenerPropietarioId()
+
+  const { data, error } = await supabase
+    .from('propiedades')
+    .select('id, nombre_apartamento, ia_identidad')
+    .eq('id', propiedadId)
+    .maybeSingle()
+
+  if (error) throw error
+  if (!data) {
+    throw new Error('Propiedad no encontrada o no tienes acceso.')
+  }
+
+  return {
+    id: data.id,
+    nombreApartamento: data.nombre_apartamento ?? 'Sin nombre',
+    iaIdentidad: data.ia_identidad ?? 'Conserje',
+  }
+}
