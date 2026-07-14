@@ -114,12 +114,17 @@ function extractBorrador(data: unknown): string {
   return tryExtractBorrador(data)
 }
 
-function parseBooleanStrict(value: unknown): boolean {
+type FlujoResponseHint = {
+  nombre: string
+  formatoEsperado: string
+}
+
+function parseBooleanStrict(value: unknown, flujo: string): boolean {
   if (typeof value === 'boolean') return value
   if (value === 'true') return true
   if (value === 'false') return false
   throw new Error(
-    'La respuesta de n8n no incluye el campo booleano "finalizado".',
+    `${flujo}: la respuesta de n8n no incluye el campo booleano "finalizado".`,
   )
 }
 
@@ -129,22 +134,25 @@ function parseFlujo1Response(data: unknown): N8nFlujo1Response {
   const respuesta = record.respuesta
   if (typeof respuesta !== 'string' || !respuesta.trim()) {
     throw new Error(
-      'La respuesta de n8n no incluye el campo "respuesta" válido.',
+      'Flujo 1: la respuesta de n8n no incluye el campo "respuesta" válido.',
     )
   }
 
   return {
     respuesta: respuesta.trim(),
-    finalizado: parseBooleanStrict(record.finalizado),
+    finalizado: parseBooleanStrict(record.finalizado, 'Flujo 1'),
   }
 }
 
-async function parseResponseJson(response: Response): Promise<unknown> {
+async function parseResponseJson(
+  response: Response,
+  hint: FlujoResponseHint,
+): Promise<unknown> {
   const text = (await response.text()).trim()
 
   if (!text) {
     throw new Error(
-      'n8n devolvió una respuesta vacía. Comprueba que el webhook use "Respond to Webhook" y devuelva { "respuesta": "...", "finalizado": false }.',
+      `${hint.nombre}: n8n devolvió una respuesta vacía. Comprueba que el webhook use "Respond to Webhook" y devuelva ${hint.formatoEsperado}.`,
     )
   }
 
@@ -152,7 +160,7 @@ async function parseResponseJson(response: Response): Promise<unknown> {
     return JSON.parse(text) as unknown
   } catch {
     throw new Error(
-      'n8n devolvió un JSON inválido. Revisa el nodo "Respond to Webhook" del Flujo 1.',
+      `${hint.nombre}: n8n devolvió un JSON inválido. Revisa el nodo "Respond to Webhook". Formato esperado: ${hint.formatoEsperado}.`,
     )
   }
 }
@@ -174,7 +182,12 @@ export async function enviarMensajeFlujo1(
     throw new Error(`n8n Flujo 1 respondió con error ${response.status}.`)
   }
 
-  return parseFlujo1Response(await parseResponseJson(response))
+  return parseFlujo1Response(
+    await parseResponseJson(response, {
+      nombre: 'Flujo 1',
+      formatoEsperado: '{ "respuesta": "...", "finalizado": false }',
+    }),
+  )
 }
 
 async function parseResponseJsonOptional(response: Response): Promise<unknown | null> {
@@ -313,7 +326,10 @@ export async function generarTarjetasGuiaLocalN8n(
     throw new Error(`n8n Guía Local respondió con error ${response.status}.`)
   }
 
-  const raw = await parseResponseJson(response)
+  const raw = await parseResponseJson(response, {
+    nombre: 'Guía Local',
+    formatoEsperado: '{ "tarjetas": [{ "categoria": "...", "nombre": "...", "distancia": "...", "informacion": "..." }] }',
+  })
   return parseTarjetasGuiaLocal(raw)
 }
 
@@ -323,7 +339,7 @@ function parseFlujo4Response(data: unknown): N8nFlujo4Response {
 
   if (typeof respuesta !== 'string' || !respuesta.trim()) {
     throw new Error(
-      'La respuesta de n8n no incluye el campo "respuesta" válido.',
+      'Flujo 4: la respuesta de n8n no incluye el campo "respuesta" válido.',
     )
   }
 
@@ -368,5 +384,10 @@ export async function enviarMensajeFlujo4(
     )
   }
 
-  return parseFlujo4Response(await parseResponseJson(response))
+  return parseFlujo4Response(
+    await parseResponseJson(response, {
+      nombre: 'Flujo 4',
+      formatoEsperado: '{ "respuesta": "..." }',
+    }),
+  )
 }
