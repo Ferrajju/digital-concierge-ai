@@ -23,6 +23,30 @@ const TIPOS_VALIDOS = new Set([
   'averias',
 ])
 
+const ALIAS_TIPO_EVENTO: Record<string, string> = {
+  emergencies: 'emergencias',
+  emergency: 'emergencias',
+  emergencia: 'emergencias',
+  early_checkin: 'checkin_anticipado',
+  early_check_in: 'checkin_anticipado',
+  checkin: 'checkin_anticipado',
+  breakdown: 'averias',
+  breakdowns: 'averias',
+  malfunction: 'averias',
+  malfunctions: 'averias',
+  averia: 'averias',
+}
+
+function normalizarTipoEvento(raw: string): string | null {
+  const key = raw.trim().toLowerCase()
+  if (TIPOS_VALIDOS.has(key)) return key
+
+  const alias = ALIAS_TIPO_EVENTO[key]
+  if (alias && TIPOS_VALIDOS.has(alias)) return alias
+
+  return null
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: { 'Access-Control-Allow-Origin': '*' } })
@@ -45,6 +69,8 @@ Deno.serve(async (req) => {
 
   const propiedadId = body.propiedad_id?.trim()
   const tipoEvento = body.tipo_evento?.trim()
+    ? normalizarTipoEvento(body.tipo_evento)
+    : null
   const resumen = body.resumen?.trim() ?? ''
   const mensajeHuesped = body.mensaje_huesped?.trim() ?? ''
   const sessionId = body.session_id?.trim()
