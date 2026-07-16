@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react'
+import UmbralBrand from './UmbralBrand'
+import { BRAND_TAGLINE_PANEL } from '../../config/brand'
 
 type HostShellProps = {
   children: ReactNode
@@ -10,17 +12,7 @@ export default function HostShell({ children, headerAction }: HostShellProps) {
     <div className="min-h-screen bg-host-bg text-host-text">
       <header className="sticky top-0 z-20 border-b border-host-border bg-host-bg/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6 sm:py-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-host-primary text-sm font-bold text-white shadow-sm">
-              DC
-            </div>
-            <div>
-              <p className="font-display text-sm font-semibold text-host-text">
-                Digital Concierge
-              </p>
-              <p className="text-xs text-host-muted">Panel del propietario</p>
-            </div>
-          </div>
+          <UmbralBrand subtitle={BRAND_TAGLINE_PANEL} />
           {headerAction}
         </div>
       </header>

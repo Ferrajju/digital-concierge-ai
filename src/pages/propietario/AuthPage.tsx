@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
 import { inputClassName } from '../../components/ui/inputClassName'
+import { BRAND_NAME, BRAND_TAGLINE } from '../../config/brand'
 import { supabase } from '../../services/supabaseClient'
 
 const MIN_PASSWORD_LENGTH = 6
@@ -147,14 +148,17 @@ export default function AuthPage() {
     <div className="flex min-h-screen items-center justify-center bg-host-bg px-6 py-12">
       <div className="w-full max-w-md animate-fade-in-up">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-host-primary text-sm font-bold text-white shadow-sm">
-            DC
+          <div
+            className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-host-primary text-lg font-bold text-white shadow-sm"
+            aria-hidden
+          >
+            U
           </div>
           <h1 className="font-display text-3xl font-semibold tracking-tight text-host-text">
-            Digital Concierge
+            {BRAND_NAME}
           </h1>
           <p className="mt-3 text-sm leading-relaxed text-host-muted">
-            Tu conserje digital para apartamentos turísticos.
+            {BRAND_TAGLINE}.
             {isLogin
               ? ' Accede a tu panel de gestión.'
               : ' Crea tu cuenta y configura tu primer alojamiento.'}

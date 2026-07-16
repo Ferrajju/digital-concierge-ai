@@ -1,3 +1,5 @@
+import { IconArrowRight } from '../../../components/ui/icons'
+import WizardStepShell from '../../../components/ui/WizardStepShell'
 import type { BusinessProfile } from './types'
 
 type StepSegmentationProps = {
@@ -32,46 +34,37 @@ const OPTIONS: {
 
 export default function StepSegmentation({ onSelect }: StepSegmentationProps) {
   return (
-    <div className="animate-fade-in-up">
-      <div className="mb-10 text-center">
-        <p className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-indigo-400">
-          Paso 1 de 3
-        </p>
-        <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-          ¿Cuántos alojamientos turísticos gestionas?
-        </h1>
-        <p className="mt-3 text-lg text-slate-400">
-          Así personalizamos tu experiencia desde el primer minuto.
-        </p>
-      </div>
-
-      <div className="grid gap-4 sm:gap-5">
+    <WizardStepShell
+      paso={1}
+      totalPasos={3}
+      icon="🏡"
+      title="¿Cuántos alojamientos turísticos gestionas?"
+      description="Así personalizamos tu experiencia desde el primer minuto."
+      centered
+    >
+      <div className="grid gap-3">
         {OPTIONS.map(({ profile, title, description, icon }) => (
           <button
             key={profile}
             type="button"
             onClick={() => onSelect(profile)}
-            className="group relative w-full overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60 p-6 text-left backdrop-blur-sm transition-all duration-300 hover:border-indigo-500/50 hover:bg-slate-900/90 hover:shadow-xl hover:shadow-indigo-500/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            className="group flex w-full items-start gap-4 rounded-xl border-2 border-stone-200 bg-white p-5 text-left transition-all hover:border-teal-300 hover:shadow-card-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-host-primary/30"
           >
-            <div className="relative flex items-start gap-5">
-              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-slate-800 text-2xl ring-1 ring-slate-700 transition-all duration-300 group-hover:bg-indigo-500/10 group-hover:ring-indigo-500/30">
-                {icon}
-              </span>
-              <div className="flex-1">
-                <h2 className="text-lg font-semibold text-white transition-colors group-hover:text-indigo-100">
-                  {title}
-                </h2>
-                <p className="mt-1.5 text-sm leading-relaxed text-slate-400">
-                  {description}
-                </p>
-              </div>
-              <span className="mt-1 text-slate-600 transition-all duration-300 group-hover:translate-x-1 group-hover:text-indigo-400">
-                →
-              </span>
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-teal-200 bg-teal-50 text-2xl">
+              {icon}
+            </span>
+            <div className="flex-1">
+              <h2 className="font-display text-base font-bold text-host-text">
+                {title}
+              </h2>
+              <p className="mt-1 text-sm leading-relaxed text-host-muted">
+                {description}
+              </p>
             </div>
+            <IconArrowRight className="mt-1 h-5 w-5 shrink-0 text-stone-300 transition-transform group-hover:translate-x-0.5 group-hover:text-host-primary" />
           </button>
         ))}
       </div>
-    </div>
+    </WizardStepShell>
   )
 }

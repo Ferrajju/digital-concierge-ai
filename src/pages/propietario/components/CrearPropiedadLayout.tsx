@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import Button from '../../../components/ui/Button'
+import UmbralBrand from '../../../components/ui/UmbralBrand'
 
 export type PasoCrearPropiedad = 1 | 2 | 3 | 4 | 5 | 6 | 7
 
@@ -28,17 +29,7 @@ export default function CrearPropiedadLayout({
     <div className="min-h-screen bg-host-bg text-host-text">
       <header className="sticky top-0 z-20 border-b border-stone-200 bg-host-bg/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-host-primary text-sm font-bold text-white shadow-sm">
-              DC
-            </div>
-            <div>
-              <p className="font-display text-sm font-semibold text-host-text">
-                Nueva vivienda
-              </p>
-              <p className="text-xs text-host-muted">Configuración guiada</p>
-            </div>
-          </div>
+          <UmbralBrand subtitle="Configuración guiada" />
           <Button to="/dashboard" variant="secondary" size="sm">
             Salir al panel
           </Button>
