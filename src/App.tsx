@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import RootRedirect from './components/SupabaseAuthRedirect'
 import GuestChatPage from './pages/huesped/GuestChatPage'
 import WelcomePage from './pages/huesped/WelcomePage'
 import AuthCallbackPage from './pages/propietario/AuthCallbackPage'
@@ -13,7 +14,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/" element={<RootRedirect />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />

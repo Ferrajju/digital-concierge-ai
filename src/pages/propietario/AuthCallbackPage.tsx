@@ -44,6 +44,15 @@ export default function AuthCallbackPage() {
       setHasSession(session)
     }
 
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (cancelled) return
+      if (event === 'SIGNED_IN' && session) {
+        finish('success', '', true)
+      }
+    })
+
     const run = async () => {
       const query = new URLSearchParams(window.location.search)
       const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
@@ -81,6 +90,11 @@ export default function AuthCallbackPage() {
         }
       }
 
+      // Implicit flow: #access_token=... — el cliente lo procesa al cargar
+      if (window.location.hash.includes('access_token=')) {
+        await new Promise((resolve) => setTimeout(resolve, 300))
+      }
+
       const {
         data: { session },
         error: sessionError,
@@ -96,6 +110,10 @@ export default function AuthCallbackPage() {
         return
       }
 
+      if (window.location.hash.includes('access_token=')) {
+        return
+      }
+
       finish(
         'success',
         'Tu email ha quedado confirmado. Ya puedes iniciar sesión en Umbral.',
@@ -106,6 +124,7 @@ export default function AuthCallbackPage() {
 
     return () => {
       cancelled = true
+      subscription.unsubscribe()
     }
   }, [])
 

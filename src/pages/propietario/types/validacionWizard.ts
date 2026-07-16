@@ -1,4 +1,4 @@
-export type CanalAlerta = 'telegram' | 'email' | 'ambos'
+export type CanalAlerta = 'telegram'
 
 export type TipoEventoAlerta = 'emergencias' | 'checkin_anticipado' | 'averias'
 

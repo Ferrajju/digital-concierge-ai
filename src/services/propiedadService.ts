@@ -118,7 +118,7 @@ export async function guardarBorradorPropiedad(
 
 export type AlertasPropiedadConfig = {
   activas: boolean
-  canal: 'telegram' | 'email' | 'ambos'
+  canal: 'telegram'
   contacto: string
   eventos: {
     emergencias: boolean
@@ -135,7 +135,7 @@ export async function guardarAlertasPropiedad(
     .from('propiedades')
     .update({
       permiso_modo_alerta: alertas.activas,
-      alertas_config: alertas,
+      alertas_config: { ...alertas, canal: 'telegram' },
     })
     .eq('id', propiedadId)
     .select('id')
@@ -162,12 +162,7 @@ function normalizarAlertasConfig(raw: unknown): AlertasPropiedadConfig {
       ? (config.eventos as Record<string, unknown>)
       : {}
 
-  const canal =
-    config.canal === 'telegram' ||
-    config.canal === 'email' ||
-    config.canal === 'ambos'
-      ? config.canal
-      : base.canal
+  const canal = config.canal === 'telegram' ? 'telegram' : 'telegram'
 
   return {
     activas:

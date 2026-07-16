@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Button from '../../../components/ui/Button'
-import FormSection, { FieldGroup } from '../../../components/ui/FormSection'
+import FormSection from '../../../components/ui/FormSection'
 import HostFeedback from '../../../components/ui/HostFeedback'
-import { inputClassName } from '../../../components/ui/inputClassName'
 import WizardStepShell from '../../../components/ui/WizardStepShell'
 import {
   guardarAlertasPropiedad,
@@ -67,7 +66,9 @@ export default function AlertasConfigPanel({
         return
       }
       if (!alertas.contacto.trim()) {
-        setError('Introduce un contacto para recibir las alertas.')
+        setError(
+          'Configura tu Chat ID de Telegram en el panel antes de activar alertas.',
+        )
         return
       }
     }
@@ -76,7 +77,10 @@ export default function AlertasConfigPanel({
     setError('')
 
     try {
-      await guardarAlertasPropiedad(propiedadId, alertas)
+      await guardarAlertasPropiedad(propiedadId, {
+        ...alertas,
+        canal: 'telegram',
+      })
       navigate('/dashboard')
     } catch (err) {
       setError(
@@ -94,7 +98,7 @@ export default function AlertasConfigPanel({
       paso={7}
       icon="✓"
       title={`Alertas para ${nombreVivienda}`}
-      description="El conocimiento del alojamiento ya está indexado. Elige qué eventos críticos quieres que el bot te notifique directamente al teléfono."
+      description="El conocimiento del alojamiento ya está indexado. Elige qué eventos críticos quieres recibir en Telegram (ya configurado en tu cuenta)."
       centered
     >
       {error && <HostFeedback className="mb-6">{error}</HostFeedback>}
@@ -151,39 +155,12 @@ export default function AlertasConfigPanel({
               ))}
             </div>
 
-            <div className="grid gap-4 pt-2 sm:grid-cols-2">
-              <FieldGroup label="Canal de notificación">
-                <select
-                  value={alertas.canal}
-                  onChange={(e) =>
-                    updateAlertas({
-                      canal: e.target.value as ConfigAlertas['canal'],
-                    })
-                  }
-                  disabled={guardando}
-                  className={inputClassName}
-                >
-                  <option value="telegram">Telegram</option>
-                  <option value="email">Email</option>
-                  <option value="ambos">Ambos</option>
-                </select>
-              </FieldGroup>
-              <FieldGroup label="Contacto de alertas">
-                <input
-                  type="text"
-                  value={alertas.contacto}
-                  onChange={(e) =>
-                    updateAlertas({ contacto: e.target.value })
-                  }
-                  placeholder="Chat ID de Telegram o email"
-                  disabled={guardando}
-                  className={inputClassName}
-                />
-                <p className="mt-1.5 text-xs text-host-muted">
-                  Se rellena con tu Telegram del onboarding si lo configuraste.
-                </p>
-              </FieldGroup>
-            </div>
+            {alertas.contacto && (
+              <p className="rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900">
+                Las alertas se enviarán a tu Telegram:{' '}
+                <span className="font-semibold">{alertas.contacto}</span>
+              </p>
+            )}
           </>
         )}
       </FormSection>

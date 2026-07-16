@@ -134,7 +134,10 @@ export default function AlertasPropiedadPanel({
     setMensajeOk('')
 
     try {
-      await guardarAlertasPropiedad(propiedadId, alertas)
+      await guardarAlertasPropiedad(propiedadId, {
+        ...alertas,
+        canal: 'telegram',
+      })
       setMensajeOk('Alertas guardadas para este alojamiento.')
     } catch (err) {
       setError(
@@ -258,23 +261,6 @@ export default function AlertasPropiedadPanel({
                   </label>
                 ))}
               </div>
-
-              <FieldGroup label="Canal de notificación" className="pt-2">
-                <select
-                  value={alertas.canal}
-                  onChange={(e) =>
-                    updateAlertas({
-                      canal: e.target.value as ConfigAlertas['canal'],
-                    })
-                  }
-                  disabled={guardando}
-                  className={inputClassName}
-                >
-                  <option value="telegram">Telegram</option>
-                  <option value="email">Email</option>
-                  <option value="ambos">Ambos</option>
-                </select>
-              </FieldGroup>
             </>
           )}
         </FormSection>
