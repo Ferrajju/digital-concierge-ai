@@ -8,3 +8,7 @@ export function getAppBaseUrl(): string {
 export function getGuestChatUrl(propiedadId: string): string {
   return `${getAppBaseUrl()}/guest/${propiedadId}`
 }
+
+export function getAuthCallbackUrl(): string {
+  return `${getAppBaseUrl()}/auth/callback`
+}

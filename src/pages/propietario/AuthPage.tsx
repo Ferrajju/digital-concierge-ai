@@ -5,6 +5,7 @@ import Card from '../../components/ui/Card'
 import { inputClassName } from '../../components/ui/inputClassName'
 import { BRAND_NAME, BRAND_TAGLINE } from '../../config/brand'
 import { supabase } from '../../services/supabaseClient'
+import { getAuthCallbackUrl } from '../../utils/appUrl'
 
 const MIN_PASSWORD_LENGTH = 6
 
@@ -67,6 +68,9 @@ export default function AuthPage() {
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: getAuthCallbackUrl(),
+      },
     })
 
     if (signUpError) throw signUpError

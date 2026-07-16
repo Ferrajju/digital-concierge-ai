@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import GuestChatPage from './pages/huesped/GuestChatPage'
 import WelcomePage from './pages/huesped/WelcomePage'
+import AuthCallbackPage from './pages/propietario/AuthCallbackPage'
 import AuthPage from './pages/propietario/AuthPage'
 import ChatsPropiedadPage from './pages/propietario/ChatsPropiedadPage'
 import CrearPropiedadPage from './pages/propietario/CrearPropiedadPage'
@@ -15,6 +16,7 @@ function App() {
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/auth" element={<AuthPage />} />
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
         <Route path="/configurar-vivienda" element={<CrearPropiedadPage />} />
         <Route
