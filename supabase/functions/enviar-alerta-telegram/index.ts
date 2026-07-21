@@ -75,7 +75,9 @@ Deno.serve(async (req) => {
   const resumen = body.resumen?.trim() ?? ''
   const mensajeHuesped = body.mensaje_huesped?.trim() ?? ''
   const sessionId = body.session_id?.trim()
-  const esPrueba = body.es_prueba === true
+  const esPrueba =
+    body.es_prueba === true ||
+    (sessionId?.startsWith('preview_') ?? false)
 
   if (!propiedadId || !tipoEvento) {
     return jsonResponse(

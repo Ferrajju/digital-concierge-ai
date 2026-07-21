@@ -93,8 +93,8 @@ export function buildAlertMarkdown(input: {
 
   if (input.esPrueba) {
     lineas.push(
-      '🧪 *SIMULACRO — Prueba del propietario*',
-      '_Esta alerta no proviene de un huésped real\\._',
+      '🧪 *ALERTA DE PRUEBA — SIMULACRO*',
+      '_Prueba del propietario\\. No es un huésped real\\._',
       '',
     )
   }
