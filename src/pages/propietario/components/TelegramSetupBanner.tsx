@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import Badge from '../../../components/ui/Badge'
 import Button from '../../../components/ui/Button'
 import Card from '../../../components/ui/Card'
 import TelegramConnectSteps from '../../../components/ui/TelegramConnectSteps'
@@ -25,6 +26,7 @@ export default function TelegramSetupBanner({
   const [error, setError] = useState('')
   const [mensajeOk, setMensajeOk] = useState('')
   const [configurado, setConfigurado] = useState(false)
+  const [editando, setEditando] = useState(false)
 
   useEffect(() => {
     let activo = true
@@ -60,6 +62,7 @@ export default function TelegramSetupBanner({
     try {
       await guardarTelegramPropietario(chatId)
       setConfigurado(true)
+      setEditando(false)
       setMensajeOk(
         `Telegram conectado con ${TELEGRAM_BOT_DISPLAY}. Ya puedes recibir alertas de tus alojamientos.`,
       )
@@ -79,70 +82,174 @@ export default function TelegramSetupBanner({
     return null
   }
 
+  const mostrarFormulario = !configurado || editando
+
   return (
     <Card
       padding="md"
       className={
         configurado
-          ? 'mb-6 border-stone-200'
+          ? 'mb-6 border-emerald-200 bg-emerald-50/40 ring-1 ring-emerald-100'
           : 'mb-6 border-amber-200 bg-amber-50/40'
       }
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="font-display text-base font-bold text-host-text">
-            {configurado
-              ? 'Alertas por Telegram'
-              : 'Conecta Telegram para recibir alertas'}
-          </p>
-          <p className="mt-1 text-sm leading-relaxed text-host-muted">
-            Bot oficial de Umbral:{' '}
-            <a
-              href={TELEGRAM_BOT_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-host-primary hover:underline"
-            >
-              {TELEGRAM_BOT_DISPLAY}
-            </a>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            {configurado && (
+              <span
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200"
+                aria-hidden
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  className="h-4 w-4"
+                >
+                  <path d="M5 13l4 4L19 7" />
+                </svg>
+              </span>
+            )}
+            <p className="font-display text-base font-bold text-host-text">
+              {configurado
+                ? 'Telegram conectado'
+                : 'Conecta Telegram para recibir alertas'}
+            </p>
+            {configurado && (
+              <Badge variant="success">Conexión establecida</Badge>
+            )}
+          </div>
+
+          <p className="mt-2 text-sm leading-relaxed text-host-muted">
+            {configurado ? (
+              <>
+                Recibirás alertas de tus alojamientos en{' '}
+                <a
+                  href={TELEGRAM_BOT_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-emerald-800 hover:underline"
+                >
+                  {TELEGRAM_BOT_DISPLAY}
+                </a>
+                {chatId && (
+                  <>
+                    {' '}
+                    · Chat ID{' '}
+                    <span className="font-mono font-semibold text-host-text">
+                      {chatId}
+                    </span>
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                Bot oficial de Umbral:{' '}
+                <a
+                  href={TELEGRAM_BOT_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-host-primary hover:underline"
+                >
+                  {TELEGRAM_BOT_DISPLAY}
+                </a>
+              </>
+            )}
           </p>
         </div>
-        <Button type="button" variant="secondary" size="sm" onClick={abrirBot}>
-          Abrir {TELEGRAM_BOT_DISPLAY}
-        </Button>
+
+        <div className="flex shrink-0 flex-wrap gap-2">
+          {configurado && !editando && (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setEditando(true)
+                setMensajeOk('')
+                setError('')
+              }}
+            >
+              Cambiar Chat ID
+            </Button>
+          )}
+          <Button type="button" variant="secondary" size="sm" onClick={abrirBot}>
+            Abrir {TELEGRAM_BOT_DISPLAY}
+          </Button>
+        </div>
       </div>
 
       {!configurado && (
-        <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50 px-4 py-4">
+        <div className="mt-4 rounded-xl border border-amber-200/80 bg-white/70 px-4 py-4">
           <TelegramConnectSteps />
         </div>
       )}
 
-      <form onSubmit={handleGuardar} className="mt-5 space-y-4">
-        <FieldGroup label="Tu Chat ID">
-          <input
-            type="text"
-            value={chatId}
-            onChange={(e) => {
-              setChatId(e.target.value)
-              setError('')
-              setMensajeOk('')
-            }}
-            placeholder="Ej: 6168367317"
-            disabled={guardando}
-            className={inputClassName}
-          />
-        </FieldGroup>
+      {mostrarFormulario && (
+        <form onSubmit={handleGuardar} className="mt-5 space-y-4">
+          {configurado && editando && (
+            <p className="text-sm text-host-muted">
+              Introduce un nuevo Chat ID si has cambiado de cuenta de Telegram.
+            </p>
+          )}
 
-        {error && <HostFeedback>{error}</HostFeedback>}
-        {mensajeOk && (
-          <HostFeedback variant="success">{mensajeOk}</HostFeedback>
-        )}
+          <FieldGroup label="Tu Chat ID">
+            <input
+              type="text"
+              value={chatId}
+              onChange={(e) => {
+                setChatId(e.target.value)
+                setError('')
+                setMensajeOk('')
+              }}
+              placeholder="Ej: 6168367317"
+              disabled={guardando}
+              className={inputClassName}
+            />
+          </FieldGroup>
 
-        <Button type="submit" loading={guardando} disabled={guardando} size="sm">
-          {configurado ? 'Actualizar Chat ID' : 'Guardar Chat ID'}
-        </Button>
-      </form>
+          {error && <HostFeedback>{error}</HostFeedback>}
+          {mensajeOk && (
+            <HostFeedback variant="success">{mensajeOk}</HostFeedback>
+          )}
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="submit"
+              loading={guardando}
+              disabled={guardando}
+              size="sm"
+            >
+              {configurado ? 'Guardar cambios' : 'Guardar Chat ID'}
+            </Button>
+            {configurado && editando && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setEditando(false)
+                  setError('')
+                  setMensajeOk('')
+                  void obtenerTelegramPropietario().then((telegram) => {
+                    if (telegram) setChatId(telegram)
+                  })
+                }}
+              >
+                Cancelar
+              </Button>
+            )}
+          </div>
+        </form>
+      )}
+
+      {configurado && !editando && mensajeOk && (
+        <HostFeedback variant="success" className="mt-4">
+          {mensajeOk}
+        </HostFeedback>
+      )}
     </Card>
   )
 }
