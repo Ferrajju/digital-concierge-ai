@@ -12,6 +12,7 @@ import {
   obtenerPropiedadBasicaPropietario,
   obtenerPropietarioId,
 } from '../../services/propiedadService'
+import { useHostScreen } from '../../hooks/useHostScreen'
 import type { ConversacionHuespedResumen } from './types/conversacionesHuesped'
 
 function acortarSessionId(sessionId: string): string {
@@ -183,6 +184,14 @@ export default function ChatsPropiedadPage() {
 
   const conversacionSeleccionada =
     conversaciones.find((c) => c.id === seleccionadaId) ?? null
+
+  useHostScreen({
+    screenId: conversacionSeleccionada ? 'chats-detalle' : 'chats-lista',
+    screenTitle: conversacionSeleccionada
+      ? 'Detalle de conversación'
+      : 'Chats de huéspedes',
+    propiedadId,
+  })
 
   useEffect(() => {
     if (!propiedadId) {

@@ -11,6 +11,7 @@ import {
 } from '../../services/propiedadService'
 import PropiedadCard from './components/PropiedadCard'
 import TelegramSetupBanner from './components/TelegramSetupBanner'
+import { useHostScreen } from '../../hooks/useHostScreen'
 import type { PropiedadResumen } from './types/propiedadDashboard'
 
 export default function DashboardPage() {
@@ -18,6 +19,11 @@ export default function DashboardPage() {
   const [propiedades, setPropiedades] = useState<PropiedadResumen[]>([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
+
+  useHostScreen({
+    screenId: 'dashboard',
+    screenTitle: 'Panel principal',
+  })
 
   useEffect(() => {
     let activo = true

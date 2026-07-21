@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import HostHeaderActions from './HostHeaderActions'
+import UmbralBrand from './UmbralBrand'
 
 type HostPageShellProps = {
   backTo: string
@@ -29,6 +31,14 @@ export default function HostPageShell({
 }: HostPageShellProps) {
   return (
     <div className="min-h-screen bg-host-bg text-host-text">
+      <header className="sticky top-0 z-20 border-b border-stone-200 bg-host-bg/95 backdrop-blur-md">
+        <div
+          className={`mx-auto flex items-center justify-between gap-4 px-4 py-4 sm:px-6 ${widthClasses[width]}`}
+        >
+          <UmbralBrand subtitle="Panel del propietario" />
+          <HostHeaderActions />
+        </div>
+      </header>
       <div
         className={`mx-auto ${widthClasses[width]} px-4 py-8 sm:px-6 sm:py-10`}
       >

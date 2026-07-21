@@ -170,3 +170,36 @@ export function IconBell({ className = 'h-5 w-5' }: IconProps) {
     </svg>
   )
 }
+
+export function IconHelp({ className = 'h-5 w-5' }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.5 9.25a2.75 2.75 0 1 1 4.2 2.32c-.85.5-1.2 1.05-1.2 2.18V14" />
+      <circle cx="12" cy="17.5" r="0.75" fill="currentColor" stroke="none" />
+    </svg>
+  )
+}
+
+export function IconLogout({ className = 'h-5 w-5' }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      aria-hidden
+    >
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <path d="M16 17l5-5-5-5M21 12H9" />
+    </svg>
+  )
+}

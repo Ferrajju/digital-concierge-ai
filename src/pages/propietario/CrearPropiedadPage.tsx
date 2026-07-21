@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { crearPropiedadConDatos, obtenerPropietarioId } from '../../services/propiedadService'
+import type { HostScreenId } from '../../config/hostHelpContent'
+import { useHostScreen } from '../../hooks/useHostScreen'
 import AlertasConfigPanel from './components/AlertasConfigPanel'
 import CrearPropiedadLayout, {
   type PasoCrearPropiedad,
@@ -35,6 +37,19 @@ const FASE_A_PASO: Record<FaseConfiguracion, PasoCrearPropiedad> = {
   alertas: 7,
 }
 
+const FASE_A_PANTALLA: Record<
+  FaseConfiguracion,
+  { screenId: HostScreenId; title: string }
+> = {
+  nombre: { screenId: 'wizard-nombre', title: 'Paso 1 — Nombre' },
+  ubicacion: { screenId: 'wizard-ubicacion', title: 'Paso 2 — Ubicación' },
+  agente: { screenId: 'wizard-agente', title: 'Paso 3 — Agente' },
+  chat: { screenId: 'wizard-chat', title: 'Paso 4 — Entrevista' },
+  validacion: { screenId: 'wizard-validacion', title: 'Paso 5 — Borrador' },
+  guiaLocal: { screenId: 'wizard-guia-local', title: 'Paso 6 — Guía local' },
+  alertas: { screenId: 'wizard-alertas', title: 'Paso 7 — Alertas' },
+}
+
 function construirDireccionCompleta(form: FormularioPropiedad): string {
   const partes = [
     form.direccionCalle.trim(),
@@ -57,6 +72,13 @@ export default function CrearPropiedadPage() {
   useEffect(() => {
     obtenerPropietarioId().catch(() => navigate('/auth'))
   }, [navigate])
+
+  const pantallaActual = FASE_A_PANTALLA[fase]
+  useHostScreen({
+    screenId: pantallaActual.screenId,
+    screenTitle: pantallaActual.title,
+    propiedadId: propiedadId ?? undefined,
+  })
 
   const updateForm = (updates: Partial<FormularioPropiedad>) => {
     setForm((prev) => ({ ...prev, ...updates }))

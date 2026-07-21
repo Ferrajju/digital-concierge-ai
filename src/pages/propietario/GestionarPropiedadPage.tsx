@@ -18,7 +18,23 @@ import AlertasPropiedadPanel from './components/AlertasPropiedadPanel'
 import BaseConocimientoEditor from './components/BaseConocimientoEditor'
 import ConfigPropiedadPanel from './components/ConfigPropiedadPanel'
 import GuiaLocalGestionPanel from './components/GuiaLocalGestionPanel'
+import type { HostScreenId } from '../../config/hostHelpContent'
+import { useHostScreen } from '../../hooks/useHostScreen'
 import type { VistaGestion } from './types/gestionConocimiento'
+
+const VISTA_A_PANTALLA: Record<
+  VistaGestion,
+  { screenId: HostScreenId; title: string }
+> = {
+  hub: { screenId: 'gestionar-hub', title: 'Hub del alojamiento' },
+  conocimiento: {
+    screenId: 'gestionar-conocimiento',
+    title: 'Base de conocimiento',
+  },
+  guia: { screenId: 'gestionar-guia', title: 'Guía local' },
+  alertas: { screenId: 'gestionar-alertas', title: 'Alertas Telegram' },
+  config: { screenId: 'gestionar-config', title: 'Agente y alojamiento' },
+}
 
 export default function GestionarPropiedadPage() {
   const { propiedadId } = useParams<{ propiedadId: string }>()
@@ -95,6 +111,13 @@ export default function GestionarPropiedadPage() {
     setVista('hub')
     void recargarContadores()
   }
+
+  const pantallaActual = VISTA_A_PANTALLA[vista]
+  useHostScreen({
+    screenId: pantallaActual.screenId,
+    screenTitle: pantallaActual.title,
+    propiedadId,
+  })
 
   if (!propiedadId) {
     return null
