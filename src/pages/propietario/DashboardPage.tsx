@@ -34,6 +34,7 @@ export default function DashboardPage() {
         const lista = await listarPropiedadesPropietario()
         if (!activo) return
         setPropiedades(lista)
+        setError('')
       } catch (err) {
         if (!activo) return
         if (err instanceof Error && err.message.includes('iniciar sesión')) {
@@ -56,6 +57,19 @@ export default function DashboardPage() {
       activo = false
     }
   }, [navigate])
+
+  const recargarPropiedades = async () => {
+    try {
+      const lista = await listarPropiedadesPropietario()
+      setPropiedades(lista)
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'No se pudieron actualizar las propiedades.',
+      )
+    }
+  }
 
   return (
     <HostShell
@@ -117,7 +131,11 @@ export default function DashboardPage() {
 
           <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
             {propiedades.map((propiedad) => (
-              <PropiedadCard key={propiedad.id} propiedad={propiedad} />
+              <PropiedadCard
+                key={propiedad.id}
+                propiedad={propiedad}
+                onActualizar={recargarPropiedades}
+              />
             ))}
           </div>
         </>

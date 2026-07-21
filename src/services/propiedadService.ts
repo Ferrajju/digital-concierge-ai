@@ -430,6 +430,42 @@ export async function listarPropiedadesPropietario(): Promise<PropiedadResumen[]
   })
 }
 
+export async function eliminarPropiedadPropietario(
+  propiedadId: string,
+): Promise<void> {
+  await obtenerPropietarioId()
+
+  const { error } = await supabase.rpc('eliminar_propiedad_propietario', {
+    p_propiedad_id: propiedadId,
+  })
+
+  if (error) throw error
+}
+
+export async function duplicarPropiedadPropietario(
+  propiedadOrigenId: string,
+  nuevoNombre: string,
+): Promise<string> {
+  await obtenerPropietarioId()
+
+  const nombre = nuevoNombre.trim()
+  if (!nombre) {
+    throw new Error('Indica un nombre para la copia.')
+  }
+
+  const { data, error } = await supabase.rpc('duplicar_propiedad_propietario', {
+    p_propiedad_origen_id: propiedadOrigenId,
+    p_nuevo_nombre: nombre,
+  })
+
+  if (error) throw error
+  if (!data) {
+    throw new Error('No se pudo duplicar la propiedad.')
+  }
+
+  return String(data)
+}
+
 export async function obtenerPropiedadBasicaPropietario(
   propiedadId: string,
 ): Promise<{ id: string; nombreApartamento: string; iaIdentidad: string }> {
