@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import ChatMarkdown from '../../components/ChatMarkdown'
-import { crearMensajeBienvenidaChat } from '../../config/guestOnboardingCopy'
+import { crearMensajeBienvenidaChat, obtenerPreguntasRapidas } from '../../config/guestOnboardingCopy'
+import { obtenerIdiomaGuest } from '../../config/guestLanguages'
 import {
-  cargarHistorialHuesped,
+  cargarConversacionHuesped,
   cargarPerfilHuesped,
   guardarHistorialHuesped,
   obtenerPropiedadGuest,
@@ -16,18 +17,12 @@ import type {
   PropiedadGuestInfo,
 } from './types/guestChat'
 
-const PREGUNTAS_RAPIDAS = [
-  '¿Cuál es la clave del Wi-Fi?',
-  '¿Horario de check-out?',
-  '¿Supermercado recomendado cerca?',
-  '¿Cómo funciona la basura?',
-] as const
-
 const MAX_TEXTAREA_ALTURA = 128
+const POLLING_MS = 3000
 
-function formatearHora(iso: string): string {
+function formatearHora(iso: string, idioma = 'es'): string {
   try {
-    return new Intl.DateTimeFormat('es-ES', {
+    return new Intl.DateTimeFormat(idioma, {
       hour: '2-digit',
       minute: '2-digit',
     }).format(new Date(iso))
@@ -46,6 +41,8 @@ export default function GuestChatPage() {
   const [cargando, setCargando] = useState(true)
   const [perfilIncompleto, setPerfilIncompleto] = useState(false)
   const [escribiendo, setEscribiendo] = useState(false)
+  const [modoAsistenciaPropietario, setModoAsistenciaPropietario] =
+    useState(false)
   const [error, setError] = useState('')
   const [tecladoAbierto, setTecladoAbierto] = useState(false)
 
@@ -54,9 +51,11 @@ export default function GuestChatPage() {
   const abortRef = useRef<AbortController | null>(null)
   const mensajesRef = useRef(mensajes)
   const perfilRef = useRef(perfil)
+  const modoAsistenciaRef = useRef(modoAsistenciaPropietario)
 
   mensajesRef.current = mensajes
   perfilRef.current = perfil
+  modoAsistenciaRef.current = modoAsistenciaPropietario
 
   const scrollAlFinal = useCallback((suave = true) => {
     const el = chatRef.current
@@ -134,8 +133,11 @@ export default function GuestChatPage() {
         }
 
         let historial: MensajeHuespedChat[] = []
+        let asistenciaPropietario = false
         try {
-          historial = await cargarHistorialHuesped(propiedadId, sid)
+          const estado = await cargarConversacionHuesped(propiedadId, sid)
+          historial = estado.mensajes
+          asistenciaPropietario = estado.modoAsistenciaPropietario
         } catch (historialErr) {
           console.warn('[GuestChat] No se pudo cargar historial:', historialErr)
         }
@@ -145,6 +147,7 @@ export default function GuestChatPage() {
         setSessionId(sid)
         setPropiedad(info)
         setPerfil(perfilHuesped)
+        setModoAsistenciaPropietario(asistenciaPropietario)
         setMensajes(
           historial.length > 0
             ? historial
@@ -179,6 +182,32 @@ export default function GuestChatPage() {
       abortRef.current?.abort()
     }
   }, [propiedadId])
+
+  useEffect(() => {
+    if (!propiedadId || !sessionId || perfilIncompleto) return
+
+    let activo = true
+
+    const sincronizar = async () => {
+      try {
+        const estado = await cargarConversacionHuesped(propiedadId, sessionId)
+        if (!activo) return
+        setMensajes(estado.mensajes)
+        setModoAsistenciaPropietario(estado.modoAsistenciaPropietario)
+      } catch {
+        // polling silencioso
+      }
+    }
+
+    const intervalo = window.setInterval(() => {
+      void sincronizar()
+    }, POLLING_MS)
+
+    return () => {
+      activo = false
+      window.clearInterval(intervalo)
+    }
+  }, [propiedadId, sessionId, perfilIncompleto])
 
   useEffect(() => {
     scrollAlFinal(!cargando)
@@ -218,9 +247,16 @@ export default function GuestChatPage() {
         console.warn('[GuestChat] No se pudo guardar antes de n8n:', persistErr)
       }
 
+      if (modoAsistenciaRef.current) {
+        setEscribiendo(false)
+        inputRef.current?.focus()
+        return
+      }
+
       const historialParaN8n = conUsuario.map(({ rol, contenido }) => ({
-        rol,
-        contenido,
+        rol: (rol === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
+        contenido:
+          rol === 'propietario' ? `[Propietario]: ${contenido}` : contenido,
       }))
 
       const data = await enviarMensajeFlujo4(
@@ -230,7 +266,11 @@ export default function GuestChatPage() {
           mensaje: mensaje,
           historial: historialParaN8n,
           idioma: perfilRef.current?.idioma,
+          idioma_nombre:
+            obtenerIdiomaGuest(perfilRef.current?.idioma ?? 'es')?.native ??
+            perfilRef.current?.idioma,
           nombre_huesped: perfilRef.current?.nombreHuesped,
+          ia_identidad: propiedad?.iaIdentidad,
         },
         controller.signal,
       )
@@ -307,6 +347,8 @@ export default function GuestChatPage() {
   }
 
   const nombreAgente = propiedad?.iaIdentidad ?? 'Conserje'
+  const idiomaHuesped = perfil?.idioma ?? 'es'
+  const preguntasRapidas = obtenerPreguntasRapidas(idiomaHuesped)
 
   return (
     <div className="guest-chat-shell">
@@ -326,11 +368,25 @@ export default function GuestChatPage() {
               {propiedad?.direccionCompleta || 'Tu alojamiento'}
             </p>
             <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-slate-500">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              {nombreAgente} · en línea
+              <span
+                className={`inline-block h-1.5 w-1.5 rounded-full ${
+                  modoAsistenciaPropietario ? 'bg-amber-400' : 'bg-emerald-400'
+                }`}
+              />
+              {modoAsistenciaPropietario
+                ? 'Propietario · te atiende personalmente'
+                : `${nombreAgente} · en línea`}
             </p>
           </div>
         </div>
+        {modoAsistenciaPropietario && (
+          <div className="mx-auto mt-2 max-w-lg px-4">
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-center text-xs text-amber-100">
+              El conserje automático está en pausa. El propietario responderá a
+              tus mensajes.
+            </div>
+          </div>
+        )}
       </header>
 
       <main
@@ -351,7 +407,8 @@ export default function GuestChatPage() {
 
           {mensajes.map((mensaje, index) => {
             const esUsuario = mensaje.rol === 'user'
-            const hora = formatearHora(mensaje.timestamp)
+            const esPropietario = mensaje.rol === 'propietario'
+            const hora = formatearHora(mensaje.timestamp, idiomaHuesped)
 
             return (
               <div
@@ -371,8 +428,14 @@ export default function GuestChatPage() {
                     }`}
                   >
                     {!esUsuario && (
-                      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-400/80">
-                        {nombreAgente}
+                      <p
+                        className={`mb-1.5 text-[10px] font-semibold uppercase tracking-wider ${
+                          esPropietario
+                            ? 'text-amber-300/90'
+                            : 'text-emerald-400/80'
+                        }`}
+                      >
+                        {esPropietario ? 'Propietario' : nombreAgente}
                       </p>
                     )}
                     {esUsuario ? (
@@ -425,7 +488,7 @@ export default function GuestChatPage() {
               Preguntas frecuentes
             </p>
             <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {PREGUNTAS_RAPIDAS.map((pregunta) => (
+              {preguntasRapidas.map((pregunta) => (
                 <button
                   key={pregunta}
                   type="button"

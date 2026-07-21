@@ -117,3 +117,47 @@ export function crearMensajeBienvenidaChat(input: {
 
   return plantillas[base] ?? plantillas.en
 }
+
+const PREGUNTAS_RAPIDAS: Record<string, string[]> = {
+  es: [
+    '¿Cuál es la clave del Wi-Fi?',
+    '¿Horario de check-out?',
+    '¿Supermercado recomendado cerca?',
+    '¿Cómo funciona la basura?',
+  ],
+  en: [
+    'What is the Wi-Fi password?',
+    'What time is check-out?',
+    'Any supermarket nearby?',
+    'How does trash/recycling work?',
+  ],
+  fr: [
+    'Quel est le mot de passe Wi-Fi ?',
+    'Quelle heure est le check-out ?',
+    'Supermarché recommandé à proximité ?',
+    'Comment fonctionne les poubelles ?',
+  ],
+  de: [
+    'Wie lautet das WLAN-Passwort?',
+    'Wann ist Check-out?',
+    'Supermarkt in der Nähe?',
+    'Wie funktioniert die Müllentsorgung?',
+  ],
+  it: [
+    'Qual è la password del Wi-Fi?',
+    'A che ora è il check-out?',
+    'Supermercato consigliato nelle vicinanze?',
+    'Come funziona la raccolta differenziata?',
+  ],
+  pt: [
+    'Qual é a palavra-passe do Wi-Fi?',
+    'A que horas é o check-out?',
+    'Supermercado recomendado perto?',
+    'Como funciona o lixo/reciclagem?',
+  ],
+}
+
+export function obtenerPreguntasRapidas(idioma: string): string[] {
+  const base = idioma.split('-')[0]
+  return PREGUNTAS_RAPIDAS[idioma] ?? PREGUNTAS_RAPIDAS[base] ?? PREGUNTAS_RAPIDAS.en
+}

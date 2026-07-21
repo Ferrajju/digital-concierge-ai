@@ -297,7 +297,7 @@ export default function ProbarAgentePage() {
       }
 
       const historialParaN8n = conUsuario.map(({ rol, contenido }) => ({
-        rol,
+        rol: (rol === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
         contenido,
       }))
 

@@ -1,7 +1,14 @@
+export type RolMensajeHuesped = 'user' | 'assistant' | 'propietario'
+
 export type MensajeHuespedChat = {
-  rol: 'user' | 'assistant'
+  rol: RolMensajeHuesped
   contenido: string
   timestamp: string
+}
+
+export type ConversacionHuespedEstado = {
+  mensajes: MensajeHuespedChat[]
+  modoAsistenciaPropietario: boolean
 }
 
 export type PropiedadGuestInfo = {
@@ -23,8 +30,14 @@ export type N8nFlujo4Payload = {
   mensaje: string
   historial: { rol: 'user' | 'assistant'; contenido: string }[]
   modo_prueba?: boolean
+  /** Código BCP-47 / ISO, p. ej. "es", "en", "pt-BR" */
   idioma?: string
+  /** Nombre legible del idioma para el prompt de la IA, p. ej. "Español" */
+  idioma_nombre?: string
+  /** Nombre o apodo del huésped */
   nombre_huesped?: string
+  /** Nombre del agente configurado en la propiedad */
+  ia_identidad?: string
 }
 
 export type N8nFlujo4Response = {

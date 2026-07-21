@@ -1,7 +1,9 @@
 import type {
+  ConversacionHuespedEstado,
   MensajeHuespedChat,
   PerfilHuesped,
   PropiedadGuestInfo,
+  RolMensajeHuesped,
 } from '../pages/huesped/types/guestChat'
 import type { ConversacionHuespedResumen } from '../pages/propietario/types/conversacionesHuesped'
 import { supabase } from './supabaseClient'
@@ -122,7 +124,11 @@ function parseHistorial(raw: unknown): MensajeHuespedChat[] {
     .map((item) => {
       if (!item || typeof item !== 'object') return null
       const msg = item as Record<string, unknown>
-      const rol = msg.rol === 'user' || msg.rol === 'assistant' ? msg.rol : null
+      const rolRaw = msg.rol
+      const rol: RolMensajeHuesped | null =
+        rolRaw === 'user' || rolRaw === 'assistant' || rolRaw === 'propietario'
+          ? rolRaw
+          : null
       const contenido =
         typeof msg.contenido === 'string' ? msg.contenido.trim() : ''
       const timestamp =
@@ -136,21 +142,89 @@ function parseHistorial(raw: unknown): MensajeHuespedChat[] {
     .filter((msg): msg is MensajeHuespedChat => msg !== null)
 }
 
-export async function cargarHistorialHuesped(
+export async function cargarConversacionHuesped(
   propiedadId: string,
   sessionId: string,
-): Promise<MensajeHuespedChat[]> {
+): Promise<ConversacionHuespedEstado> {
   const { data, error } = await supabase
     .from('conversaciones_huesped')
-    .select('historial_mensajes')
+    .select('historial_mensajes, modo_asistencia_propietario')
     .eq('propiedad_id', propiedadId)
     .eq('session_id', sessionId)
     .maybeSingle()
 
   if (error) throw error
-  if (!data?.historial_mensajes) return []
 
-  return parseHistorial(data.historial_mensajes)
+  return {
+    mensajes: parseHistorial(data?.historial_mensajes),
+    modoAsistenciaPropietario: data?.modo_asistencia_propietario === true,
+  }
+}
+
+export async function cargarHistorialHuesped(
+  propiedadId: string,
+  sessionId: string,
+): Promise<MensajeHuespedChat[]> {
+  const estado = await cargarConversacionHuesped(propiedadId, sessionId)
+  return estado.mensajes
+}
+
+export async function activarModoAsistenciaPropietario(
+  conversacionId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('conversaciones_huesped')
+    .update({
+      modo_asistencia_propietario: true,
+      modo_asistencia_desde: new Date().toISOString(),
+    })
+    .eq('id', conversacionId)
+
+  if (error) throw error
+}
+
+export async function desactivarModoAsistenciaPropietario(
+  conversacionId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('conversaciones_huesped')
+    .update({
+      modo_asistencia_propietario: false,
+      modo_asistencia_desde: null,
+    })
+    .eq('id', conversacionId)
+
+  if (error) throw error
+}
+
+export async function enviarMensajePropietarioHuesped(
+  conversacionId: string,
+  propiedadId: string,
+  sessionId: string,
+  contenido: string,
+  mensajesActuales: MensajeHuespedChat[],
+): Promise<MensajeHuespedChat[]> {
+  const texto = contenido.trim()
+  if (!texto) throw new Error('El mensaje no puede estar vacío.')
+
+  const mensaje: MensajeHuespedChat = {
+    rol: 'propietario',
+    contenido: texto,
+    timestamp: new Date().toISOString(),
+  }
+
+  const actualizados = [...mensajesActuales, mensaje]
+
+  const { error } = await supabase
+    .from('conversaciones_huesped')
+    .update({ historial_mensajes: actualizados })
+    .eq('id', conversacionId)
+    .eq('propiedad_id', propiedadId)
+    .eq('session_id', sessionId)
+
+  if (error) throw error
+
+  return actualizados
 }
 
 export async function guardarHistorialHuesped(
@@ -192,6 +266,7 @@ function construirResumenConversacion(row: {
   historial_mensajes: unknown
   nombre_huesped: string | null
   idioma: string | null
+  modo_asistencia_propietario: boolean | null
   created_at: string
   updated_at: string
 }): ConversacionHuespedResumen {
@@ -203,6 +278,7 @@ function construirResumenConversacion(row: {
     sessionId: row.session_id,
     nombreHuesped: row.nombre_huesped?.trim() || undefined,
     idioma: row.idioma?.trim() || undefined,
+    modoAsistenciaPropietario: row.modo_asistencia_propietario === true,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     totalMensajes: mensajes.length,
@@ -219,7 +295,7 @@ export async function listarConversacionesPropiedad(
   const { data, error } = await supabase
     .from('conversaciones_huesped')
     .select(
-      'id, session_id, historial_mensajes, nombre_huesped, idioma, created_at, updated_at',
+      'id, session_id, historial_mensajes, nombre_huesped, idioma, modo_asistencia_propietario, created_at, updated_at',
     )
     .eq('propiedad_id', propiedadId)
     .eq('perfil_completado', true)

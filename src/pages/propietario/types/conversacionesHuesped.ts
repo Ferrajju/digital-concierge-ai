@@ -1,15 +1,19 @@
-import type { MensajeHuespedChat } from '../../huesped/types/guestChat'
+import type {
+  MensajeHuespedChat,
+  RolMensajeHuesped,
+} from '../../huesped/types/guestChat'
 
 export type ConversacionHuespedResumen = {
   id: string
   sessionId: string
   nombreHuesped?: string
   idioma?: string
+  modoAsistenciaPropietario: boolean
   createdAt: string
   updatedAt: string
   totalMensajes: number
   mensajesUsuario: number
   ultimoMensaje: string
-  ultimoMensajeRol: 'user' | 'assistant'
+  ultimoMensajeRol: RolMensajeHuesped
   mensajes: MensajeHuespedChat[]
 }
