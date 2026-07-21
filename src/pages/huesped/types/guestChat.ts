@@ -16,6 +16,7 @@ export type N8nFlujo4Payload = {
   session_id: string
   mensaje: string
   historial: { rol: 'user' | 'assistant'; contenido: string }[]
+  modo_prueba?: boolean
 }
 
 export type N8nFlujo4Response = {

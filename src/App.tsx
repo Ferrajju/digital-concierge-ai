@@ -10,6 +10,7 @@ import CrearPropiedadPage from './pages/propietario/CrearPropiedadPage'
 import DashboardPage from './pages/propietario/DashboardPage'
 import GestionarPropiedadPage from './pages/propietario/GestionarPropiedadPage'
 import OnboardingPage from './pages/propietario/OnboardingPage'
+import ProbarAgentePage from './pages/propietario/ProbarAgentePage'
 
 function App() {
   return (
@@ -29,6 +30,10 @@ function App() {
           <Route
             path="/propiedad/:propiedadId/chats"
             element={<ChatsPropiedadPage />}
+          />
+          <Route
+            path="/propiedad/:propiedadId/probar-agente"
+            element={<ProbarAgentePage />}
           />
         </Route>
         <Route

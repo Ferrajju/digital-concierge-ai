@@ -49,6 +49,7 @@ export async function registrarAlerta(input: {
   telegramChatId?: string
   enviada: boolean
   motivoOmitida?: string
+  esPrueba?: boolean
 }) {
   const supabase = createServiceClient()
 
@@ -61,6 +62,7 @@ export async function registrarAlerta(input: {
     telegram_chat_id: input.telegramChatId ?? null,
     enviada: input.enviada,
     motivo_omitida: input.motivoOmitida ?? null,
+    es_prueba: input.esPrueba ?? false,
   })
 
   if (error) throw error

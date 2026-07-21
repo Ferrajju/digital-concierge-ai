@@ -12,6 +12,7 @@ export type HostScreenId =
   | 'gestionar-guia'
   | 'gestionar-alertas'
   | 'gestionar-config'
+  | 'probar-agente'
   | 'chats-lista'
   | 'chats-detalle'
 
@@ -156,6 +157,17 @@ export const HOST_HELP_CONTENT: Record<HostScreenId, HostHelpContent> = {
       'Cambia el nombre del agente, el tono y el nivel de expresividad.',
       'Actualiza dirección, piso o indicaciones si algo ha cambiado en el alojamiento.',
       'Si modificas la ubicación, conviene revisar también la guía local del hub.',
+    ],
+  },
+  'probar-agente': {
+    title: 'Probar conserje (simulacro)',
+    intro:
+      'Vista idéntica a la del huésped, pero en modo prueba: no contamina el listado de chats reales.',
+    bullets: [
+      'Las conversaciones son temporales y se borran al salir o al pulsar «Nueva conversación».',
+      'Si disparas una incidencia (fuga, avería…), recibirás la alerta en Telegram marcada como SIMULACRO.',
+      'Usa las sugerencias rápidas para probar respuestas habituales o alertas críticas.',
+      'Sal al hub cuando termines; el simulacro no aparece en «Chats de huéspedes».',
     ],
   },
   'chats-lista': {

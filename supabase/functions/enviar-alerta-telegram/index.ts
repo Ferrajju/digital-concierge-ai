@@ -15,6 +15,7 @@ type EnviarAlertaBody = {
   resumen?: string
   mensaje_huesped?: string
   session_id?: string
+  es_prueba?: boolean
 }
 
 const TIPOS_VALIDOS = new Set([
@@ -74,6 +75,7 @@ Deno.serve(async (req) => {
   const resumen = body.resumen?.trim() ?? ''
   const mensajeHuesped = body.mensaje_huesped?.trim() ?? ''
   const sessionId = body.session_id?.trim()
+  const esPrueba = body.es_prueba === true
 
   if (!propiedadId || !tipoEvento) {
     return jsonResponse(
@@ -105,6 +107,7 @@ Deno.serve(async (req) => {
         sessionId,
         enviada: false,
         motivoOmitida: evaluacion.motivo ?? 'no_notificar',
+        esPrueba,
       })
 
       return jsonResponse({
@@ -130,6 +133,7 @@ Deno.serve(async (req) => {
       mensajeHuesped,
       sessionId,
       panelUrl,
+      esPrueba,
     })
 
     const chatId = evaluacion.telegram_chat_id
@@ -147,6 +151,7 @@ Deno.serve(async (req) => {
       sessionId,
       telegramChatId: String(chatId),
       enviada: true,
+      esPrueba,
     })
 
     return jsonResponse({

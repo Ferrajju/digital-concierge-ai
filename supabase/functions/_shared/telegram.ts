@@ -66,6 +66,7 @@ export function buildAlertMarkdown(input: {
   mensajeHuesped: string
   sessionId?: string
   panelUrl?: string
+  esPrueba?: boolean
 }): string {
   const meta = TITULOS[input.tipoEvento] ?? {
     emoji: '⚠️',
@@ -88,11 +89,21 @@ export function buildAlertMarkdown(input: {
     minute: '2-digit',
   }).format(new Date())
 
-  const lineas = [
+  const lineas: string[] = []
+
+  if (input.esPrueba) {
+    lineas.push(
+      '🧪 *SIMULACRO — Prueba del propietario*',
+      '_Esta alerta no proviene de un huésped real\\._',
+      '',
+    )
+  }
+
+  lineas.push(
     `${meta.emoji} *ALERTA — ${meta.titulo}*`,
     '',
     `🏠 *Propiedad:* ${escapeMd(input.nombreApartamento)}`,
-  ]
+  )
 
   if (direccion) {
     lineas.push(`📍 *Ubicación:* ${escapeMd(direccion)}`)
@@ -102,7 +113,7 @@ export function buildAlertMarkdown(input: {
     '',
     `📝 *Resumen:* ${escapeMd(input.resumen.trim())}`,
     '',
-    '💬 *Mensaje del huésped:*',
+    `💬 *${input.esPrueba ? 'Mensaje de prueba' : 'Mensaje del huésped'}:*`,
     escapeMd(input.mensajeHuesped.trim()),
     '',
     `🕐 ${escapeMd(fecha)}`,

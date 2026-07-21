@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import HostFeedback from '../../components/ui/HostFeedback'
 import HostPageShell from '../../components/ui/HostPageShell'
 import HubTile from '../../components/ui/HubTile'
-import { IconBell, IconBook, IconMap, IconSettings } from '../../components/ui/icons'
+import { IconBell, IconBook, IconChat, IconMap, IconSettings } from '../../components/ui/icons'
 import { HostLoading } from '../../components/ui/HostShell'
 import {
   listarBloquesConocimiento,
@@ -142,6 +142,14 @@ export default function GestionarPropiedadPage() {
         <HostLoading label="Cargando propiedad..." />
       ) : vista === 'hub' ? (
         <div className="grid gap-5 sm:grid-cols-2">
+          <HubTile
+            accent="teal"
+            icon={<IconChat />}
+            title="Probar conserje"
+            description="Chatea como un huésped en simulacro. Las alertas Telegram llegan marcadas como prueba y no ensucian tus chats reales."
+            meta="Simulacro temporal"
+            onClick={() => navigate(`/propiedad/${propiedadId}/probar-agente`)}
+          />
           <HubTile
             accent="teal"
             icon={<IconBook />}
