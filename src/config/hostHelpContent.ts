@@ -24,144 +24,168 @@ export type HostHelpContent = {
 export const HOST_HELP_CONTENT: Record<HostScreenId, HostHelpContent> = {
   dashboard: {
     title: 'Panel principal',
-    intro: 'Desde aquí gestionas todos tus alojamientos.',
+    intro:
+      'Aquí ves todos tus alojamientos y accedes a la configuración de cada uno.',
     bullets: [
-      'Conecta Telegram para recibir alertas críticas en tu móvil.',
-      'Añade una nueva propiedad con el asistente de configuración.',
-      'Entra en cada tarjeta para editar conocimiento, guía local o chats.',
-      'Descarga el QR o enlace del huésped desde cada propiedad.',
+      'Conecta tu Telegram arriba para recibir alertas de incidencias en el móvil.',
+      'Pulsa «Añadir propiedad» para crear un alojamiento nuevo con el asistente paso a paso.',
+      'En cada tarjeta puedes gestionar el manual, la guía local, los chats y el QR del huésped.',
+      'Desde «Gestionar» entras al hub de una propiedad concreta.',
     ],
   },
   'wizard-nombre': {
-    title: 'Paso 1 — Nombre',
-    intro: 'Identifica el alojamiento con un nombre claro para ti y tus huéspedes.',
+    title: 'Paso 1 — Nombre del alojamiento',
+    intro:
+      'En este paso pones el nombre con el que identificarás el piso en Umbral y en el chat del huésped.',
     bullets: [
-      'Usa un nombre reconocible (ej. “Ático Mar” o “Piso Centro”).',
-      'Este nombre aparece en el panel y en la cabecera del chat del huésped.',
+      'Elige algo claro y reconocible: «Ático Mar», «Piso Gran Vía», etc.',
+      'No hace falta el nombre comercial de Airbnb; es para ti y para la cabecera del conserje.',
+      'Al continuar, pasarás a indicar la ubicación en el mapa.',
     ],
   },
   'wizard-ubicacion': {
     title: 'Paso 2 — Ubicación',
-    intro: 'Define dónde está el alojamiento para la guía local y el contexto del agente.',
+    intro:
+      'Aquí registras la dirección física del alojamiento. Se usa para la guía local y el contexto del agente.',
     bullets: [
-      'Busca la dirección con el buscador de Google Maps.',
-      'Completa piso, código postal e indicaciones de acceso si aplica.',
-      'No repitas la entrevista de acceso: aquí va la ubicación física.',
+      'Busca la calle con el buscador de Google Maps y selecciona el resultado correcto.',
+      'Completa piso, puerta, código postal y ciudad si faltan datos.',
+      'Las indicaciones de acceso (portal, timbre…) las darás en la entrevista del paso 4, no aquí.',
     ],
   },
   'wizard-agente': {
-    title: 'Paso 3 — Agente',
-    intro: 'Personaliza cómo se presenta tu conserje digital.',
+    title: 'Paso 3 — Personalidad del agente',
+    intro:
+      'Defines cómo se presenta y habla tu conserje digital con los huéspedes.',
     bullets: [
-      'Elige un nombre para el agente (ej. Lucas, Ana).',
-      'Define el tono: formal, cercano o discreto.',
+      'El nombre del agente aparece en el chat (ej. Lucas, Ana, Marco).',
+      'El tono (formal, cercano o discreto) marca el estilo de las respuestas.',
+      'Podrás ajustarlo más adelante desde «Agente y alojamiento» en el hub de la propiedad.',
     ],
   },
   'wizard-chat': {
-    title: 'Paso 4 — Entrevista',
-    intro: 'Responde las preguntas del agente para crear el manual del alojamiento.',
+    title: 'Paso 4 — Entrevista de configuración',
+    intro:
+      'El agente te hace preguntas para recoger la información operativa del piso: acceso, Wi-Fi, normas y electrodomésticos.',
     bullets: [
-      'Responde con detalle: Wi-Fi, llaves, normas, electrodomésticos…',
-      'Una respuesta por mensaje ayuda a no olvidar nada.',
-      'La entrevista termina cuando el agente confirma que tiene toda la info.',
+      'Responde con detalle concreto: contraseñas, códigos, horarios de silencio, etc.',
+      'Responde una cosa por mensaje; el agente irá tema a tema hasta cubrirlo todo.',
+      'La entrevista acaba cuando el agente confirma que ya tiene toda la información.',
+      'No cierres antes de tiempo: cuanto más completo el manual, mejor responderá el conserje.',
     ],
   },
   'wizard-validacion': {
-    title: 'Paso 5 — Borrador',
-    intro: 'Revisa y edita el manual generado antes de indexarlo.',
+    title: 'Paso 5 — Revisión del borrador',
+    intro:
+      'Se muestra el manual estructurado a partir de la entrevista. Aquí lo revisas y corriges antes de publicarlo.',
     bullets: [
-      'Lee el borrador estructurado y corrige lo que haga falta.',
-      'Al guardar, se procesa e indexa para el chat del huésped.',
+      'Lee cada sección y edita lo que no sea exacto o falte.',
+      'Al guardar, el texto se procesa y se indexa para que el huésped pueda preguntar al agente.',
+      'Este paso puede tardar unos segundos mientras se generan los embeddings.',
     ],
   },
   'wizard-guia-local': {
     title: 'Paso 6 — Guía local',
-    intro: 'Añade recomendaciones cercanas para tus huéspedes.',
+    intro:
+      'Añades recomendaciones de la zona (comercios, transporte, ocio) que el conserje podrá sugerir a los huéspedes.',
     bullets: [
-      'Genera sugerencias automáticas o añade lugares manualmente.',
-      'Edita distancias y descripciones antes de activar el conserje.',
+      'Puedes generar sugerencias automáticas según la ubicación o crear tarjetas a mano.',
+      'Revisa nombre, distancia y descripción de cada recomendación.',
+      'Al activar el conserje, estas tarjetas quedan indexadas junto al manual del alojamiento.',
     ],
   },
   'wizard-alertas': {
-    title: 'Paso 7 — Alertas',
-    intro: 'Elige qué incidencias quieres recibir en Telegram.',
+    title: 'Paso 7 — Alertas por Telegram',
+    intro:
+      'Eliges qué incidencias críticas quieres recibir en tu móvil cuando un huésped las reporte.',
     bullets: [
-      'Usa el Telegram que configuraste en el panel (onboarding o dashboard).',
-      'Activa emergencias, check-in anticipado o averías según prefieras.',
-      'Al finalizar, la propiedad queda lista en tu panel.',
+      'Se usa el Chat ID de Telegram que configuraste en el panel o en el onboarding.',
+      'Marca los tipos de alerta: emergencias, check-in anticipado o averías técnicas.',
+      'Puedes desactivar las alertas para este alojamiento si no las necesitas.',
+      'Al pulsar «Finalizar configuración», la propiedad queda lista en tu panel.',
     ],
   },
   'gestionar-hub': {
     title: 'Hub del alojamiento',
-    intro: 'Centro de gestión de una propiedad concreta.',
+    intro:
+      'Centro de gestión de una propiedad. Desde aquí accedes a las cuatro áreas principales.',
     bullets: [
-      'Base de conocimiento: bloques del manual indexados.',
-      'Guía local: restaurantes, farmacias, transporte…',
-      'Alertas Telegram: incidencias críticas de esta propiedad.',
-      'Agente y alojamiento: nombre, personalidad y datos generales.',
+      'Base de conocimiento: el manual indexado (Wi-Fi, normas, acceso…).',
+      'Guía local: recomendaciones de la zona para huéspedes.',
+      'Alertas Telegram: qué incidencias te avisan para este piso.',
+      'Agente y alojamiento: nombre del conserje, personalidad y datos generales.',
     ],
   },
   'gestionar-conocimiento': {
     title: 'Base de conocimiento',
-    intro: 'Edita los bloques que usa el agente para responder al huésped.',
+    intro:
+      'Editas los bloques de texto que el conserje usa para responder preguntas de los huéspedes.',
     bullets: [
-      'Cada bloque cubre un tema (Wi-Fi, acceso, normas…).',
-      'Al guardar se regeneran los embeddings para búsqueda semántica.',
-      'Mantén textos claros y operativos, como hablarías con un huésped.',
+      'Cada bloque cubre un tema: acceso, Wi-Fi, normas, electrodomésticos, etc.',
+      'Al guardar cambios, se vuelven a indexar los textos para mejorar las respuestas.',
+      'Escribe como le hablarías a un huésped: claro, directo y con datos concretos.',
+      'Puedes añadir, editar o eliminar bloques según evolucione el alojamiento.',
     ],
   },
   'gestionar-guia': {
     title: 'Guía local',
-    intro: 'Gestiona recomendaciones de la zona.',
+    intro:
+      'Gestionas las recomendaciones de la zona que el agente puede citar en el chat.',
     bullets: [
-      'Añade, edita o elimina tarjetas por categoría.',
-      'Indica distancias a pie o en transporte cuando puedas.',
-      'Los cambios se indexan para el chat del huésped.',
+      'Organiza tarjetas por categoría: restauración, transporte, salud, ocio…',
+      'Indica distancias aproximadas («5 min a pie», «2 paradas de metro»).',
+      'Los cambios se guardan e indexan; el huésped los verá reflejados en las respuestas.',
     ],
   },
   'gestionar-alertas': {
     title: 'Alertas Telegram',
-    intro: 'Configura avisos de esta propiedad.',
+    intro:
+      'Configuras las notificaciones de incidencias críticas para este alojamiento concreto.',
     bullets: [
-      'Puedes usar tu Chat ID global o uno distinto para este alojamiento.',
-      'Marca qué tipos de incidencia quieres recibir.',
-      'Desactiva alertas si no quieres notificaciones temporales.',
+      'Por defecto se usa tu Chat ID global; aquí puedes poner otro si gestionas el piso con otra persona.',
+      'Activa o desactiva alertas para todo el alojamiento con el interruptor principal.',
+      'Elige qué eventos avisan: emergencias, check-in anticipado o averías técnicas.',
+      'Solo se envía Telegram si el huésped reporta algo que el agente clasifica como alerta.',
     ],
   },
   'gestionar-config': {
     title: 'Agente y alojamiento',
-    intro: 'Ajusta datos generales y personalidad del conserje.',
+    intro:
+      'Ajustas los datos generales del piso y la personalidad del conserje digital.',
     bullets: [
-      'Cambia nombre del agente, tono y expresividad.',
-      'Actualiza dirección o indicaciones si cambian.',
-      'Si mueves la ubicación, revisa también la guía local.',
+      'Cambia el nombre del agente, el tono y el nivel de expresividad.',
+      'Actualiza dirección, piso o indicaciones si algo ha cambiado en el alojamiento.',
+      'Si modificas la ubicación, conviene revisar también la guía local del hub.',
     ],
   },
   'chats-lista': {
     title: 'Chats de huéspedes',
-    intro: 'Historial de conversaciones de esta propiedad.',
+    intro:
+      'Listado de conversaciones que los huéspedes han tenido con el conserje de esta propiedad.',
     bullets: [
-      'Cada sesión agrupa los mensajes de un huésped.',
-      'Abre una conversación para leer el detalle completo.',
-      'Útil para detectar incidencias recurrentes o dudas frecuentes.',
+      'Cada fila es una sesión distinta (un huésped o una estancia).',
+      'Pulsa una conversación para leer el hilo completo.',
+      'Útil para ver dudas frecuentes, incidencias o la calidad de las respuestas del agente.',
     ],
   },
   'chats-detalle': {
     title: 'Detalle de conversación',
-    intro: 'Mensajes intercambiados en una sesión concreta.',
+    intro:
+      'Vista completa de los mensajes de una sesión entre un huésped y el conserje.',
     bullets: [
-      'Revisa qué preguntó el huésped y cómo respondió el agente.',
-      'Vuelve a la lista con el botón atrás.',
+      'Los mensajes del huésped aparecen a la derecha; los del agente, a la izquierda.',
+      'Revisa si el agente respondió bien o si falta información en el manual.',
+      'Vuelve al listado con «Volver» o la flecha en móvil.',
     ],
   },
 }
 
 export const HOST_HELP_FALLBACK: HostHelpContent = {
-  title: 'Ayuda',
-  intro: 'Estás en el panel de propietario de Umbral.',
+  title: 'Panel de propietario',
+  intro: 'Estás en el panel de Umbral para gestionar tus alojamientos turísticos.',
   bullets: [
-    'Usa el menú o los botones de la pantalla para navegar.',
-    'Si algo no funciona, envíanos un comentario desde este mismo botón de ayuda.',
+    'Usa los botones y enlaces de la pantalla para navegar.',
+    'Si algo no funciona o echas en falta algo, envíanos un comentario con el botón de ayuda.',
   ],
 }
 

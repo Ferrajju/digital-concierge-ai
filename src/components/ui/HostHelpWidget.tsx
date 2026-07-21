@@ -111,7 +111,7 @@ export default function HostHelpWidget() {
                     fullWidth
                     onClick={() => setPaso('help')}
                   >
-                    Qué puedo hacer aquí
+                    Qué se hace en esta pantalla
                   </Button>
                   <Button
                     type="button"
