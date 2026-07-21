@@ -9,6 +9,8 @@ type WizardStepShellProps = {
   description?: ReactNode
   children: ReactNode
   centered?: boolean
+  /** Para pasos con chat: cabecera compacta y contenido flexible sin scroll de página. */
+  fillViewport?: boolean
 }
 
 export default function WizardStepShell({
@@ -19,7 +21,33 @@ export default function WizardStepShell({
   description,
   children,
   centered = false,
+  fillViewport = false,
 }: WizardStepShellProps) {
+  if (fillViewport) {
+    return (
+      <div className="flex h-full min-h-0 flex-col">
+        <div className={`shrink-0 ${centered ? 'text-center' : ''}`}>
+          <p className="text-xs font-bold uppercase tracking-wider text-host-primary">
+            Paso {paso} de {totalPasos}
+          </p>
+          <h1 className="mt-1 font-display text-lg font-bold tracking-tight text-host-text sm:text-xl">
+            {title}
+          </h1>
+          {description && (
+            <p
+              className={`mt-1 text-xs leading-relaxed text-host-muted ${
+                centered ? 'mx-auto max-w-lg' : 'max-w-2xl line-clamp-2'
+              }`}
+            >
+              {description}
+            </p>
+          )}
+        </div>
+        <div className="mt-3 flex min-h-0 flex-1 flex-col">{children}</div>
+      </div>
+    )
+  }
+
   return (
     <Card padding="lg" className="animate-fade-in-up">
       <div className={centered ? 'text-center' : ''}>

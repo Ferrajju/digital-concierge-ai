@@ -9,6 +9,8 @@ type CrearPropiedadLayoutProps = {
   paso: PasoCrearPropiedad
   children: ReactNode
   anchoAmplio?: boolean
+  /** Pantalla de chat: ocupa el viewport sin scroll de página. */
+  fillViewport?: boolean
 }
 
 const PASOS = [
@@ -25,11 +27,18 @@ export default function CrearPropiedadLayout({
   paso,
   children,
   anchoAmplio = false,
+  fillViewport = false,
 }: CrearPropiedadLayoutProps) {
   return (
-    <div className="min-h-screen bg-host-bg text-host-text">
-      <header className="sticky top-0 z-20 border-b border-stone-200 bg-host-bg/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+    <div
+      className={
+        fillViewport
+          ? 'flex h-dvh flex-col overflow-hidden bg-host-bg text-host-text'
+          : 'min-h-screen bg-host-bg text-host-text'
+      }
+    >
+      <header className="z-20 shrink-0 border-b border-stone-200 bg-host-bg/95 backdrop-blur-md">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3 sm:px-6 sm:py-4">
           <UmbralBrand subtitle="Configuración guiada" />
           <HostHeaderActions>
             <Button to="/dashboard" variant="secondary" size="sm">
@@ -39,8 +48,12 @@ export default function CrearPropiedadLayout({
         </div>
       </header>
 
-      <div className="border-b border-stone-200 bg-white">
-        <div className="mx-auto max-w-5xl overflow-x-auto px-4 py-5 sm:px-6">
+      <div className="shrink-0 border-b border-stone-200 bg-white">
+        <div
+          className={`mx-auto max-w-5xl overflow-x-auto px-4 sm:px-6 ${
+            fillViewport ? 'py-3' : 'py-5'
+          }`}
+        >
           <nav
             aria-label="Progreso de configuración"
             className="flex min-w-max items-center justify-center gap-1 sm:gap-2"
@@ -90,9 +103,11 @@ export default function CrearPropiedadLayout({
       </div>
 
       <main
-        className={`mx-auto px-4 py-8 sm:px-6 sm:py-10 ${
-          anchoAmplio ? 'max-w-5xl' : 'max-w-2xl'
-        }`}
+        className={`mx-auto w-full ${
+          fillViewport
+            ? 'flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-3 sm:px-6 sm:py-4'
+            : 'px-4 py-8 sm:px-6 sm:py-10'
+        } ${anchoAmplio ? 'max-w-5xl' : 'max-w-2xl'}`}
       >
         {children}
       </main>

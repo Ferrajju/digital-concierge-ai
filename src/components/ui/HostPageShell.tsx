@@ -12,6 +12,8 @@ type HostPageShellProps = {
   children: ReactNode
   width?: '4xl' | '6xl'
   headerExtra?: ReactNode
+  /** Ocupa exactamente la ventana; el scroll queda dentro del contenido hijo. */
+  fillViewport?: boolean
 }
 
 const widthClasses = {
@@ -28,22 +30,41 @@ export default function HostPageShell({
   children,
   width = '6xl',
   headerExtra,
+  fillViewport = false,
 }: HostPageShellProps) {
   return (
-    <div className="min-h-screen bg-host-bg text-host-text">
-      <header className="sticky top-0 z-20 border-b border-stone-200 bg-host-bg/95 backdrop-blur-md">
+    <div
+      className={
+        fillViewport
+          ? 'flex h-dvh flex-col overflow-hidden bg-host-bg text-host-text'
+          : 'min-h-screen bg-host-bg text-host-text'
+      }
+    >
+      <header
+        className={`z-20 shrink-0 border-b border-stone-200 bg-host-bg/95 backdrop-blur-md ${
+          fillViewport ? '' : 'sticky top-0'
+        }`}
+      >
         <div
-          className={`mx-auto flex items-center justify-between gap-4 px-4 py-4 sm:px-6 ${widthClasses[width]}`}
+          className={`mx-auto flex items-center justify-between gap-4 px-4 py-3 sm:px-6 sm:py-4 ${widthClasses[width]}`}
         >
           <UmbralBrand subtitle="Panel del propietario" />
           <HostHeaderActions />
         </div>
       </header>
       <div
-        className={`mx-auto ${widthClasses[width]} px-4 py-8 sm:px-6 sm:py-10`}
+        className={`mx-auto flex w-full flex-col ${
+          fillViewport
+            ? 'min-h-0 flex-1 overflow-hidden px-4 py-3 sm:px-6 sm:py-4'
+            : 'px-4 py-8 sm:px-6 sm:py-10'
+        } ${widthClasses[width]}`}
       >
-        <div className="mb-8 flex flex-wrap items-start justify-between gap-4 border-b border-stone-200 pb-6">
-          <div>
+        <div
+          className={`flex shrink-0 flex-wrap items-start justify-between gap-3 border-b border-stone-200 ${
+            fillViewport ? 'mb-3 pb-3' : 'mb-8 pb-6'
+          }`}
+        >
+          <div className="min-w-0">
             <Link
               to={backTo}
               className="text-sm font-medium text-host-muted transition-colors hover:text-host-primary"
@@ -51,22 +72,44 @@ export default function HostPageShell({
               ← {backLabel}
             </Link>
             {eyebrow && (
-              <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-host-primary">
+              <p
+                className={`text-xs font-semibold uppercase tracking-wider text-host-primary ${
+                  fillViewport ? 'mt-2' : 'mt-4'
+                }`}
+              >
                 {eyebrow}
               </p>
             )}
-            <h1 className="mt-2 font-display text-2xl font-semibold tracking-tight text-host-text sm:text-3xl">
+            <h1
+              className={`mt-1 font-display font-semibold tracking-tight text-host-text ${
+                fillViewport
+                  ? 'truncate text-lg sm:text-xl'
+                  : 'mt-2 text-2xl sm:text-3xl'
+              }`}
+            >
               {title}
             </h1>
             {description && (
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-host-muted">
+              <p
+                className={`max-w-2xl text-host-muted ${
+                  fillViewport
+                    ? 'mt-1 line-clamp-1 text-xs'
+                    : 'mt-2 text-sm leading-relaxed'
+                }`}
+              >
                 {description}
               </p>
             )}
           </div>
           {headerExtra}
         </div>
-        {children}
+        <div
+          className={
+            fillViewport ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : ''
+          }
+        >
+          {children}
+        </div>
       </div>
     </div>
   )

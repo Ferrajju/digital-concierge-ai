@@ -120,89 +120,32 @@ function AtajosPruebaBar({
   deshabilitado: boolean
   onAtajo: (texto: string) => void
 }) {
-  const info = ATAJOS_PRUEBA.filter((a) => a.tipo === 'info')
-  const alertas = ATAJOS_PRUEBA.filter((a) => a.tipo === 'alerta')
-
   return (
-    <div className="shrink-0 border-t border-host-border bg-stone-100/80 px-4 py-4 sm:px-6 sm:py-5">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="font-display text-base font-semibold text-host-text">
-            Atajos de prueba
-          </p>
-          <p className="mt-0.5 text-sm text-host-muted">
-            Pulsa una tarjeta para enviar la pregunta al instante
-          </p>
-        </div>
-        <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-900">
-          Siempre disponibles
-        </span>
+    <div className="shrink-0 border-t border-host-border bg-stone-50 px-3 py-2 sm:px-4">
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        <p className="text-xs font-semibold text-host-text">Atajos de prueba</p>
+        <p className="hidden text-[10px] text-host-muted sm:block">
+          Consultas · Alertas Telegram
+        </p>
       </div>
-
-      <div className="mt-4 grid gap-4 xl:grid-cols-2">
-        <div>
-          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-host-primary">
-            Consultas habituales
-          </p>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {info.map((atajo) => (
-              <button
-                key={atajo.id}
-                type="button"
-                disabled={deshabilitado}
-                onClick={() => onAtajo(atajo.texto)}
-                className="group flex items-center gap-3 rounded-xl border border-stone-200 bg-host-surface px-4 py-3.5 text-left shadow-sm transition-all hover:border-teal-300 hover:bg-teal-50/60 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <span
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-lg ring-1 ring-teal-100"
-                  aria-hidden
-                >
-                  {atajo.emoji}
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-host-text group-hover:text-teal-900">
-                    {atajo.titulo}
-                  </span>
-                  <span className="mt-0.5 block truncate text-xs text-host-muted">
-                    {atajo.texto}
-                  </span>
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-amber-800">
-            Probar alertas Telegram
-          </p>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {alertas.map((atajo) => (
-              <button
-                key={atajo.id}
-                type="button"
-                disabled={deshabilitado}
-                onClick={() => onAtajo(atajo.texto)}
-                className="group flex items-center gap-3 rounded-xl border border-amber-200/80 bg-amber-50/50 px-4 py-3.5 text-left shadow-sm transition-all hover:border-amber-300 hover:bg-amber-50 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <span
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-lg ring-1 ring-amber-200"
-                  aria-hidden
-                >
-                  {atajo.emoji}
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-host-text group-hover:text-amber-950">
-                    {atajo.titulo}
-                  </span>
-                  <span className="mt-0.5 block truncate text-xs text-host-muted">
-                    {atajo.texto}
-                  </span>
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
+      <div className="flex gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5">
+        {ATAJOS_PRUEBA.map((atajo) => (
+          <button
+            key={atajo.id}
+            type="button"
+            disabled={deshabilitado}
+            onClick={() => onAtajo(atajo.texto)}
+            title={atajo.texto}
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+              atajo.tipo === 'alerta'
+                ? 'border-amber-200 bg-amber-50 text-amber-950 hover:bg-amber-100'
+                : 'border-stone-200 bg-white text-host-text hover:border-teal-300 hover:bg-teal-50'
+            }`}
+          >
+            <span aria-hidden>{atajo.emoji}</span>
+            {atajo.titulo}
+          </button>
+        ))}
       </div>
     </div>
   )
@@ -466,15 +409,17 @@ export default function ProbarAgentePage() {
 
   return (
     <HostPageShell
+      fillViewport
       backTo={hubPath}
       backLabel="Volver al hub"
       eyebrow="Simulacro del conserje"
       title={propiedad?.nombreApartamento ?? 'Probar conserje'}
-      description={`Prueba a ${nombreAgente} como huésped. Conversación temporal · alertas marcadas como simulacro.`}
+      description={`${nombreAgente} · conversación temporal · alertas de simulacro`}
       headerExtra={
         <Button
           type="button"
           variant="secondary"
+          size="sm"
           onClick={() => void nuevaPrueba()}
           disabled={escribiendo}
         >
@@ -483,53 +428,42 @@ export default function ProbarAgentePage() {
       }
     >
       {error && propiedad && (
-        <HostFeedback className="mb-4">{error}</HostFeedback>
+        <HostFeedback className="mb-2 shrink-0">{error}</HostFeedback>
       )}
 
       <Card
         padding="none"
-        className="flex min-h-[calc(100dvh-12.5rem)] flex-col overflow-hidden shadow-card-hover sm:min-h-[calc(100dvh-11rem)]"
+        className="flex min-h-0 flex-1 flex-col overflow-hidden shadow-card"
       >
-        <div className="flex shrink-0 flex-col gap-4 border-b border-host-border bg-host-surface px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5">
-          <div className="flex min-w-0 items-center gap-4">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-host-border bg-host-surface px-3 py-2.5 sm:px-5">
+          <div className="flex min-w-0 items-center gap-3">
             <div
-              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-host-primary text-xl font-bold text-white shadow-md"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-host-primary text-base font-bold text-white shadow-sm"
               aria-hidden
             >
               {nombreAgente.charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0">
-              <p className="font-display text-lg font-semibold text-host-text">
+              <p className="truncate font-display text-base font-semibold text-host-text">
                 {nombreAgente}
               </p>
-              <p className="mt-0.5 truncate text-sm text-host-muted">
-                {propiedad?.direccionCompleta || 'Vista huésped'}
-              </p>
-              <p className="mt-1 flex items-center gap-2 text-xs font-medium text-emerald-700">
-                <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
-                En línea · simulacro activo
+              <p className="truncate text-xs text-host-muted">
+                {propiedad?.direccionCompleta || 'Vista huésped'} · en línea
               </p>
             </div>
           </div>
-
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 sm:max-w-xs">
-            <p className="text-xs font-bold uppercase tracking-wider text-amber-900">
-              Modo simulacro
-            </p>
-            <p className="mt-1 text-sm leading-relaxed text-amber-950/90">
-              No contamina tus chats reales. Las alertas Telegram llevan etiqueta
-              de prueba.
-            </p>
-          </div>
+          <span className="shrink-0 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-amber-900">
+            Simulacro
+          </span>
         </div>
 
         <div
           ref={chatRef}
-          className="min-h-[240px] flex-1 overflow-y-auto bg-stone-50/70 px-4 py-5 sm:px-6 sm:py-6"
+          className="min-h-0 flex-1 overflow-y-auto bg-stone-50/70 px-3 py-3 sm:px-5 sm:py-4"
           aria-live="polite"
           aria-relevant="additions"
         >
-          <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
+          <div className="mx-auto flex w-full max-w-5xl flex-col gap-3">
             {mensajes.map((mensaje, index) => {
               const esUsuario = mensaje.rol === 'user'
               const hora = formatearHora(mensaje.timestamp)
@@ -541,14 +475,14 @@ export default function ProbarAgentePage() {
                 >
                   <div className="max-w-[94%] sm:max-w-[82%] lg:max-w-[70%]">
                     <div
-                      className={`rounded-2xl px-5 py-4 text-base leading-relaxed shadow-sm ${
+                      className={`rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm sm:text-base ${
                         esUsuario
                           ? 'rounded-br-md bg-host-primary text-white'
                           : 'rounded-bl-md border border-host-border bg-host-surface text-host-text'
                       }`}
                     >
                       {!esUsuario && (
-                        <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-host-primary">
+                        <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-host-primary">
                           {nombreAgente}
                         </p>
                       )}
@@ -565,7 +499,7 @@ export default function ProbarAgentePage() {
                     </div>
                     {hora && (
                       <p
-                        className={`mt-1.5 px-1 text-xs text-stone-400 ${
+                        className={`mt-1 px-1 text-[10px] text-stone-400 ${
                           esUsuario ? 'text-right' : 'text-left'
                         }`}
                       >
@@ -580,12 +514,12 @@ export default function ProbarAgentePage() {
 
             {escribiendo && (
               <div className="flex justify-start">
-                <div className="rounded-2xl border border-host-border bg-host-surface px-5 py-4 shadow-sm">
-                  <div className="flex items-center gap-3">
-                    <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-host-primary [animation-delay:0ms]" />
-                    <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-host-primary [animation-delay:150ms]" />
-                    <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-host-primary [animation-delay:300ms]" />
-                    <span className="text-sm text-host-muted">
+                <div className="rounded-2xl border border-host-border bg-host-surface px-4 py-3 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-host-primary [animation-delay:0ms]" />
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-host-primary [animation-delay:150ms]" />
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-host-primary [animation-delay:300ms]" />
+                    <span className="text-xs text-host-muted sm:text-sm">
                       {nombreAgente} está escribiendo...
                     </span>
                   </div>
@@ -602,19 +536,16 @@ export default function ProbarAgentePage() {
 
         <form
           onSubmit={sendMessage}
-          className="shrink-0 border-t border-host-border bg-host-surface px-4 py-4 sm:px-6 sm:py-5"
+          className="shrink-0 border-t border-host-border bg-host-surface px-3 py-2.5 sm:px-5 sm:py-3"
         >
-          <label
-            htmlFor="preview-chat-input"
-            className="mb-2 block text-sm font-semibold text-host-text"
-          >
-            Escribe tu propia pregunta
-          </label>
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+            <label htmlFor="preview-chat-input" className="sr-only">
+              Escribe como huésped de prueba
+            </label>
             <textarea
               id="preview-chat-input"
               ref={inputRef}
-              rows={2}
+              rows={1}
               value={input}
               onChange={(e) => {
                 setInput(e.target.value)
@@ -624,23 +555,18 @@ export default function ProbarAgentePage() {
               onFocus={() => {
                 setTimeout(() => scrollAlFinal(true), 150)
               }}
-              placeholder="Ej.: ¿Dónde aparco el coche? ¿Cómo abro la puerta?"
+              placeholder="Escribe como un huésped..."
               disabled={escribiendo}
-              className={`min-h-[56px] max-h-40 flex-1 resize-none text-base ${inputClassName}`}
+              className={`min-h-[44px] max-h-28 flex-1 resize-none text-sm sm:text-base ${inputClassName}`}
             />
             <Button
               type="submit"
-              size="lg"
               disabled={!input.trim() || escribiendo}
-              className="shrink-0 lg:min-w-[9rem]"
+              className="shrink-0 sm:min-w-[7rem]"
             >
               Enviar
             </Button>
           </div>
-          <p className="mt-2 text-xs text-host-muted">
-            Enter para enviar · Shift+Enter para nueva línea · Los atajos de
-            arriba siguen disponibles en todo momento
-          </p>
         </form>
       </Card>
     </HostPageShell>

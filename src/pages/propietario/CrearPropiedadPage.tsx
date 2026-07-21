@@ -152,7 +152,11 @@ export default function CrearPropiedadPage() {
     fase === 'chat' || fase === 'validacion' || fase === 'guiaLocal'
 
   return (
-    <CrearPropiedadLayout paso={paso} anchoAmplio={anchoAmplio}>
+    <CrearPropiedadLayout
+      paso={paso}
+      anchoAmplio={anchoAmplio}
+      fillViewport={fase === 'chat'}
+    >
       {fase === 'nombre' && (
         <StepNombreVivienda
           valor={form.nombreVivienda}

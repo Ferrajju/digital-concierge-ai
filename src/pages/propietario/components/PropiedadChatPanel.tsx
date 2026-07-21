@@ -183,27 +183,30 @@ export default function PropiedadChatPanel({
   return (
     <WizardStepShell
       paso={4}
+      fillViewport
       title={`Configura ${nombreVivienda}`}
       description={
         <>
           Entrevista con{' '}
           <span className="font-semibold text-host-primary">{nombreIa}</span>.
-          Cuéntale todo lo que un huésped necesita saber: accesos, Wi-Fi, normas
-          y más.
+          Cuéntale accesos, Wi-Fi, normas y más.
         </>
       }
     >
-      {error && <HostFeedback className="mb-4">{error}</HostFeedback>}
+      {error && <HostFeedback className="mb-3 shrink-0">{error}</HostFeedback>}
 
-      <Card padding="none" className="overflow-hidden">
+      <Card
+        padding="none"
+        className="flex min-h-0 flex-1 flex-col overflow-hidden shadow-card"
+      >
         <div
           ref={chatContainerRef}
-          className="flex h-[calc(100vh-20rem)] min-h-[420px] flex-col gap-3 overflow-y-auto bg-stone-50/50 px-4 py-5 sm:px-6"
+          className="min-h-0 flex-1 overflow-y-auto bg-stone-50/50 px-4 py-4 sm:px-6"
         >
           {mensajes.map((mensaje) => (
             <div
               key={mensaje.id}
-              className={`flex ${
+              className={`mb-3 flex ${
                 mensaje.remitente === 'propietario'
                   ? 'justify-end'
                   : 'justify-start'
@@ -243,9 +246,9 @@ export default function PropiedadChatPanel({
 
         <form
           onSubmit={handleEnviar}
-          className="border-t border-stone-200 bg-white p-4 sm:p-5"
+          className="shrink-0 border-t border-stone-200 bg-white p-3 sm:p-4"
         >
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <input
               ref={inputRef}
               type="text"
