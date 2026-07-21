@@ -125,12 +125,15 @@ function DetalleConversacion({
   )
   const [input, setInput] = useState('')
   const [enviando, setEnviando] = useState(false)
+  const [activando, setActivando] = useState(false)
   const [error, setError] = useState('')
   const [saliendo, setSaliendo] = useState(false)
 
   const chatRef = useRef<HTMLDivElement>(null)
   const mensajesRef = useRef(mensajes)
+  const modoAsistenciaRef = useRef(modoAsistencia)
   mensajesRef.current = mensajes
+  modoAsistenciaRef.current = modoAsistencia
 
   const scrollAlFinal = useCallback(() => {
     const el = chatRef.current
@@ -148,29 +151,12 @@ function DetalleConversacion({
   }, [mensajes, scrollAlFinal])
 
   useEffect(() => {
-    let activo = true
-
-    const activar = async () => {
-      try {
-        await activarModoAsistenciaPropietario(conversacion.id)
-        if (!activo) return
-        setModoAsistencia(true)
-        onActualizar({ id: conversacion.id, modoAsistenciaPropietario: true })
-      } catch (err) {
-        if (!activo) return
-        setError(
-          err instanceof Error
-            ? err.message
-            : 'No se pudo activar el modo asistencia.',
+    return () => {
+      if (modoAsistenciaRef.current) {
+        void desactivarModoAsistenciaPropietario(conversacion.id).catch(
+          () => {},
         )
       }
-    }
-
-    void activar()
-
-    return () => {
-      activo = false
-      void desactivarModoAsistenciaPropietario(conversacion.id).catch(() => {})
     }
   }, [conversacion.id])
 
@@ -217,6 +203,24 @@ function DetalleConversacion({
     }
   }, [propiedadId, conversacion.sessionId, conversacion.id])
 
+  const entrarModoAsistencia = async () => {
+    setActivando(true)
+    setError('')
+    try {
+      await activarModoAsistenciaPropietario(conversacion.id)
+      setModoAsistencia(true)
+      onActualizar({ id: conversacion.id, modoAsistenciaPropietario: true })
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'No se pudo activar el modo asistencia.',
+      )
+    } finally {
+      setActivando(false)
+    }
+  }
+
   const salirModoAsistencia = async () => {
     setSaliendo(true)
     setError('')
@@ -224,7 +228,6 @@ function DetalleConversacion({
       await desactivarModoAsistenciaPropietario(conversacion.id)
       setModoAsistencia(false)
       onActualizar({ id: conversacion.id, modoAsistenciaPropietario: false })
-      onVolver?.()
     } catch (err) {
       setError(
         err instanceof Error
@@ -278,11 +281,10 @@ function DetalleConversacion({
           {onVolver && (
             <button
               type="button"
-              onClick={() => void salirModoAsistencia()}
-              disabled={saliendo}
-              className="mt-0.5 shrink-0 rounded-lg border border-host-border bg-host-surface px-2.5 py-1.5 text-xs font-medium text-host-muted sm:px-3 sm:text-sm lg:hidden disabled:opacity-50"
+              onClick={onVolver}
+              className="mt-0.5 shrink-0 rounded-lg border border-host-border bg-host-surface px-2.5 py-1.5 text-xs font-medium text-host-muted sm:px-3 sm:text-sm lg:hidden"
             >
-              ← Salir
+              ← Volver
             </button>
           )}
           <div className="min-w-0 flex-1">
@@ -399,31 +401,74 @@ function DetalleConversacion({
             {error}
           </p>
         )}
-        <form onSubmit={(e) => void enviarRespuesta(e)} className="mx-auto max-w-2xl">
-          <div className="flex items-end gap-2">
-            <textarea
-              rows={1}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Escribe tu respuesta al huésped…"
-              disabled={enviando || !modoAsistencia}
-              className="min-h-[44px] flex-1 resize-none rounded-2xl border border-host-border bg-white px-4 py-3 text-sm text-host-text placeholder:text-host-muted focus:border-host-primary focus:outline-none focus:ring-2 focus:ring-host-primary/20 disabled:opacity-50"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault()
-                  void enviarRespuesta(e)
-                }
-              }}
-            />
+
+        {!modoAsistencia ? (
+          <div className="mx-auto max-w-2xl rounded-2xl border border-dashed border-host-border bg-stone-50/80 px-4 py-4">
+            <p className="text-center text-xs leading-relaxed text-host-muted">
+              Modo lectura. El conserje automático sigue atendiendo al huésped.
+            </p>
             <button
-              type="submit"
-              disabled={!input.trim() || enviando || !modoAsistencia}
-              className="flex h-11 shrink-0 items-center justify-center rounded-2xl bg-host-primary px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
+              type="button"
+              onClick={() => void entrarModoAsistencia()}
+              disabled={activando}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-host-primary px-4 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-host-primary/90 disabled:opacity-60"
             >
-              Enviar
+              {activando ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  Activando modo asistencia…
+                </>
+              ) : (
+                'Responder al huésped'
+              )}
             </button>
+            <p className="mt-2 text-center text-[10px] leading-relaxed text-host-muted">
+              Al responder activarás el modo asistencia: el conserje IA se
+              pausará y tú enviarás los mensajes. Podrás reactivarlo cuando
+              termines.
+            </p>
           </div>
-        </form>
+        ) : (
+          <>
+            <form
+              onSubmit={(e) => void enviarRespuesta(e)}
+              className="mx-auto max-w-2xl"
+            >
+              <div className="flex items-end gap-2">
+                <textarea
+                  rows={1}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Escribe tu respuesta al huésped…"
+                  disabled={enviando}
+                  autoFocus
+                  className="min-h-[44px] flex-1 resize-none rounded-2xl border border-host-border bg-white px-4 py-3 text-sm text-host-text placeholder:text-host-muted focus:border-host-primary focus:outline-none focus:ring-2 focus:ring-host-primary/20 disabled:opacity-50"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      void enviarRespuesta(e)
+                    }
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={!input.trim() || enviando}
+                  className="flex h-11 shrink-0 items-center justify-center rounded-2xl bg-host-primary px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Enviar
+                </button>
+              </div>
+            </form>
+            <button
+              type="button"
+              onClick={() => void salirModoAsistencia()}
+              disabled={saliendo}
+              className="mx-auto mt-3 flex w-full max-w-2xl items-center justify-center rounded-xl border border-host-border bg-host-surface px-3 py-2 text-xs font-semibold text-host-muted transition-colors hover:bg-stone-50 disabled:opacity-50 lg:hidden"
+            >
+              {saliendo ? 'Reactivando conserje…' : 'Reactivar conserje automático'}
+            </button>
+          </>
+        )}
       </div>
     </div>
   )
