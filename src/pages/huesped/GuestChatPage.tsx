@@ -1,9 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import ChatMarkdown from '../../components/ChatMarkdown'
-import { crearMensajeBienvenidaChat, obtenerPreguntasRapidas } from '../../config/guestOnboardingCopy'
+import GuestSettingsSheet from '../../components/huesped/GuestSettingsSheet'
+import {
+  crearMensajeBienvenidaChat,
+  obtenerCopyGuest,
+  obtenerPreguntasRapidas,
+} from '../../config/guestOnboardingCopy'
 import { obtenerIdiomaGuest } from '../../config/guestLanguages'
 import {
+  actualizarIdiomaHuesped,
   cargarConversacionHuesped,
   cargarPerfilHuesped,
   guardarHistorialHuesped,
@@ -45,6 +51,9 @@ export default function GuestChatPage() {
     useState(false)
   const [error, setError] = useState('')
   const [tecladoAbierto, setTecladoAbierto] = useState(false)
+  const [ajustesAbiertos, setAjustesAbiertos] = useState(false)
+  const [guardandoIdioma, setGuardandoIdioma] = useState(false)
+  const [mensajeIdiomaGuardado, setMensajeIdiomaGuardado] = useState('')
 
   const chatRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -80,6 +89,13 @@ export default function GuestChatPage() {
     }
   }, [])
 
+  const idiomaHuesped = perfil?.idioma ?? 'es'
+  const copy = obtenerCopyGuest(idiomaHuesped)
+
+  useEffect(() => {
+    document.documentElement.lang = idiomaHuesped.split('-')[0]
+  }, [idiomaHuesped])
+
   useEffect(() => {
     const viewport = window.visualViewport
     if (!viewport) return
@@ -106,7 +122,7 @@ export default function GuestChatPage() {
 
   useEffect(() => {
     if (!propiedadId) {
-      setError('Enlace no válido.')
+      setError('invalid')
       setCargando(false)
       return
     }
@@ -165,11 +181,7 @@ export default function GuestChatPage() {
         )
       } catch (err) {
         if (!activo) return
-        setError(
-          err instanceof Error
-            ? err.message
-            : 'No se pudo cargar el chat del huésped.',
-        )
+        setError('load')
       } finally {
         if (activo) setCargando(false)
       }
@@ -294,9 +306,7 @@ export default function GuestChatPage() {
       setMensajes(mensajesRef.current)
       setInput(mensaje)
       setError(
-        err instanceof Error
-          ? err.message
-          : 'No se pudo enviar el mensaje. Inténtalo de nuevo.',
+        err instanceof Error ? err.message : copy.sendError,
       )
       requestAnimationFrame(ajustarAlturaTextarea)
     } finally {
@@ -317,6 +327,32 @@ export default function GuestChatPage() {
     }
   }
 
+  const handleGuardarIdioma = async (nuevoIdioma: string) => {
+    if (!propiedadId || !sessionId || !perfil?.nombreHuesped) return
+
+    setGuardandoIdioma(true)
+    setMensajeIdiomaGuardado('')
+
+    try {
+      await actualizarIdiomaHuesped(
+        propiedadId,
+        sessionId,
+        nuevoIdioma,
+        perfil.nombreHuesped,
+      )
+      setPerfil((prev) =>
+        prev ? { ...prev, idioma: nuevoIdioma } : prev,
+      )
+      setMensajeIdiomaGuardado(obtenerCopyGuest(nuevoIdioma).settingsSaved)
+      window.setTimeout(() => {
+        setAjustesAbiertos(false)
+        setMensajeIdiomaGuardado('')
+      }, 900)
+    } finally {
+      setGuardandoIdioma(false)
+    }
+  }
+
   const mostrarSugerencias =
     !escribiendo && mensajes.length <= 2 && !input.trim()
 
@@ -325,30 +361,43 @@ export default function GuestChatPage() {
   }
 
   if (cargando) {
+    const copyCarga = obtenerCopyGuest(idiomaHuesped)
     return (
       <div className="guest-chat-shell flex items-center justify-center px-4">
         <div className="text-center">
           <div className="mx-auto mb-4 h-11 w-11 animate-spin rounded-full border-[3px] border-emerald-500/20 border-t-emerald-400" />
-          <p className="text-sm text-slate-400">Preparando tu conserje...</p>
+          <p className="text-sm text-slate-400">{copyCarga.loadingConcierge}</p>
         </div>
       </div>
     )
   }
 
   if (error && !propiedad) {
+    const copyError = obtenerCopyGuest(idiomaHuesped)
+    const mensajeError =
+      error === 'invalid'
+        ? copyError.invalidLink
+        : error === 'load'
+          ? copyError.sendError
+          : error
     return (
       <div className="guest-chat-shell flex items-center justify-center px-6 text-center">
         <div>
-          <p className="text-lg font-semibold text-white">Enlace no disponible</p>
-          <p className="mt-2 text-sm leading-relaxed text-slate-400">{error}</p>
+          <p className="text-lg font-semibold text-white">
+            {copyError.linkUnavailable}
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-slate-400">
+            {mensajeError}
+          </p>
         </div>
       </div>
     )
   }
 
   const nombreAgente = propiedad?.iaIdentidad ?? 'Conserje'
-  const idiomaHuesped = perfil?.idioma ?? 'es'
   const preguntasRapidas = obtenerPreguntasRapidas(idiomaHuesped)
+  const idiomaNativo =
+    obtenerIdiomaGuest(idiomaHuesped)?.native ?? idiomaHuesped.toUpperCase()
 
   return (
     <div className="guest-chat-shell">
@@ -365,7 +414,7 @@ export default function GuestChatPage() {
               {propiedad?.nombreApartamento}
             </h1>
             <p className="truncate text-xs text-emerald-300/90">
-              {propiedad?.direccionCompleta || 'Tu alojamiento'}
+              {propiedad?.direccionCompleta || copy.yourStay}
             </p>
             <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-slate-500">
               <span
@@ -374,16 +423,24 @@ export default function GuestChatPage() {
                 }`}
               />
               {modoAsistenciaPropietario
-                ? 'Propietario · te atiende personalmente'
-                : `${nombreAgente} · en línea`}
+                ? copy.ownerPersonal
+                : `${nombreAgente} · ${copy.online}`}
             </p>
           </div>
+          <button
+            type="button"
+            onClick={() => setAjustesAbiertos(true)}
+            className="flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 text-[11px] font-medium text-slate-300 transition-colors hover:bg-white/10"
+            aria-label={copy.openSettings}
+          >
+            <span aria-hidden>🌐</span>
+            <span className="max-w-[4.5rem] truncate">{idiomaNativo}</span>
+          </button>
         </div>
         {modoAsistenciaPropietario && (
-          <div className="mx-auto mt-2 max-w-lg px-4">
+          <div className="mx-auto mt-2 max-w-lg px-4 pb-1">
             <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-center text-xs text-amber-100">
-              El conserje automático está en pausa. El propietario responderá a
-              tus mensajes.
+              {copy.ownerBanner}
             </div>
           </div>
         )}
@@ -435,7 +492,7 @@ export default function GuestChatPage() {
                             : 'text-emerald-400/80'
                         }`}
                       >
-                        {esPropietario ? 'Propietario' : nombreAgente}
+                        {esPropietario ? copy.ownerLabel : nombreAgente}
                       </p>
                     )}
                     {esUsuario ? (
@@ -485,7 +542,7 @@ export default function GuestChatPage() {
         {mostrarSugerencias && (
           <div className="mx-auto max-w-lg px-3 pt-3">
             <p className="mb-2 px-1 text-[11px] font-medium uppercase tracking-wider text-slate-500">
-              Preguntas frecuentes
+              {copy.faqTitle}
             </p>
             <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {preguntasRapidas.map((pregunta) => (
@@ -505,7 +562,7 @@ export default function GuestChatPage() {
         <form onSubmit={sendMessage} className="mx-auto max-w-lg px-3 py-3">
           <div className="flex items-end gap-2">
             <label htmlFor="guest-chat-input" className="sr-only">
-              Escribe tu pregunta
+              {copy.inputLabel}
             </label>
             <textarea
               id="guest-chat-input"
@@ -520,7 +577,7 @@ export default function GuestChatPage() {
               onFocus={() => {
                 setTimeout(() => scrollAlFinal(true), 150)
               }}
-              placeholder="Escribe tu pregunta..."
+              placeholder={copy.inputPlaceholder}
               disabled={escribiendo}
               enterKeyHint="send"
               inputMode="text"
@@ -533,7 +590,7 @@ export default function GuestChatPage() {
               type="submit"
               disabled={!input.trim() || escribiendo}
               className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-              aria-label="Enviar mensaje"
+              aria-label={copy.sendLabel}
             >
               <svg
                 viewBox="0 0 24 24"
@@ -546,10 +603,23 @@ export default function GuestChatPage() {
             </button>
           </div>
           <p className="mt-2 px-1 text-center text-[10px] text-slate-600">
-            Enter para enviar · Shift+Enter para nueva línea
+            {copy.inputHint}
           </p>
         </form>
       </footer>
+
+      <GuestSettingsSheet
+        abierto={ajustesAbiertos}
+        idiomaActual={idiomaHuesped}
+        copy={copy}
+        guardando={guardandoIdioma}
+        mensajeExito={mensajeIdiomaGuardado}
+        onCerrar={() => {
+          setAjustesAbiertos(false)
+          setMensajeIdiomaGuardado('')
+        }}
+        onGuardarIdioma={handleGuardarIdioma}
+      />
     </div>
   )
 }

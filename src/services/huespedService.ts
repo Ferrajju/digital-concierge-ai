@@ -117,6 +117,18 @@ export async function guardarPerfilHuesped(
   if (error) throw error
 }
 
+export async function actualizarIdiomaHuesped(
+  propiedadId: string,
+  sessionId: string,
+  idioma: string,
+  nombreHuesped: string,
+): Promise<void> {
+  await guardarPerfilHuesped(propiedadId, sessionId, {
+    nombreHuesped,
+    idioma,
+  })
+}
+
 function parseHistorial(raw: unknown): MensajeHuespedChat[] {
   if (!Array.isArray(raw)) return []
 
