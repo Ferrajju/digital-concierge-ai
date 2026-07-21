@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Navigate, useParams } from 'react-router-dom'
 import ChatMarkdown from '../../components/ChatMarkdown'
+import { crearMensajeBienvenidaChat } from '../../config/guestOnboardingCopy'
 import {
   cargarHistorialHuesped,
+  cargarPerfilHuesped,
   guardarHistorialHuesped,
   obtenerPropiedadGuest,
 } from '../../services/huespedService'
@@ -10,6 +12,7 @@ import { enviarMensajeFlujo4 } from '../../services/n8nService'
 import { obtenerSessionIdHuesped } from '../../utils/guestSession'
 import type {
   MensajeHuespedChat,
+  PerfilHuesped,
   PropiedadGuestInfo,
 } from './types/guestChat'
 
@@ -21,14 +24,6 @@ const PREGUNTAS_RAPIDAS = [
 ] as const
 
 const MAX_TEXTAREA_ALTURA = 128
-
-function crearMensajeBienvenida(nombreAgente: string): MensajeHuespedChat {
-  return {
-    rol: 'assistant',
-    contenido: `¡Hola! Soy **${nombreAgente}**, tu conserje digital.\n\nPregúntame lo que necesites sobre el alojamiento, la zona o tu estancia. También puedes usar las sugerencias de abajo.`,
-    timestamp: new Date().toISOString(),
-  }
-}
 
 function formatearHora(iso: string): string {
   try {
@@ -44,10 +39,12 @@ function formatearHora(iso: string): string {
 export default function GuestChatPage() {
   const { propiedadId } = useParams<{ propiedadId: string }>()
   const [propiedad, setPropiedad] = useState<PropiedadGuestInfo | null>(null)
+  const [perfil, setPerfil] = useState<PerfilHuesped | null>(null)
   const [sessionId, setSessionId] = useState('')
   const [mensajes, setMensajes] = useState<MensajeHuespedChat[]>([])
   const [input, setInput] = useState('')
   const [cargando, setCargando] = useState(true)
+  const [perfilIncompleto, setPerfilIncompleto] = useState(false)
   const [escribiendo, setEscribiendo] = useState(false)
   const [error, setError] = useState('')
   const [tecladoAbierto, setTecladoAbierto] = useState(false)
@@ -56,8 +53,10 @@ export default function GuestChatPage() {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const abortRef = useRef<AbortController | null>(null)
   const mensajesRef = useRef(mensajes)
+  const perfilRef = useRef(perfil)
 
   mensajesRef.current = mensajes
+  perfilRef.current = perfil
 
   const scrollAlFinal = useCallback((suave = true) => {
     const el = chatRef.current
@@ -120,6 +119,20 @@ export default function GuestChatPage() {
         const sid = obtenerSessionIdHuesped(propiedadId)
         const info = await obtenerPropiedadGuest(propiedadId)
 
+        let perfilHuesped: PerfilHuesped | null = null
+        try {
+          perfilHuesped = await cargarPerfilHuesped(propiedadId, sid)
+        } catch (perfilErr) {
+          console.warn('[GuestChat] No se pudo cargar perfil:', perfilErr)
+        }
+
+        if (!perfilHuesped?.perfilCompletado) {
+          if (!activo) return
+          setPerfilIncompleto(true)
+          setCargando(false)
+          return
+        }
+
         let historial: MensajeHuespedChat[] = []
         try {
           historial = await cargarHistorialHuesped(propiedadId, sid)
@@ -131,10 +144,21 @@ export default function GuestChatPage() {
 
         setSessionId(sid)
         setPropiedad(info)
+        setPerfil(perfilHuesped)
         setMensajes(
           historial.length > 0
             ? historial
-            : [crearMensajeBienvenida(info.iaIdentidad)],
+            : [
+                {
+                  rol: 'assistant',
+                  contenido: crearMensajeBienvenidaChat({
+                    nombreAgente: info.iaIdentidad,
+                    nombreHuesped: perfilHuesped.nombreHuesped,
+                    idioma: perfilHuesped.idioma,
+                  }),
+                  timestamp: new Date().toISOString(),
+                },
+              ],
         )
       } catch (err) {
         if (!activo) return
@@ -205,6 +229,8 @@ export default function GuestChatPage() {
           session_id: sessionId,
           mensaje: mensaje,
           historial: historialParaN8n,
+          idioma: perfilRef.current?.idioma,
+          nombre_huesped: perfilRef.current?.nombreHuesped,
         },
         controller.signal,
       )
@@ -253,6 +279,10 @@ export default function GuestChatPage() {
 
   const mostrarSugerencias =
     !escribiendo && mensajes.length <= 2 && !input.trim()
+
+  if (perfilIncompleto && propiedadId) {
+    return <Navigate to={`/guest/${propiedadId}`} replace />
+  }
 
   if (cargando) {
     return (

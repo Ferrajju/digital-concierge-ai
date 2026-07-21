@@ -19,6 +19,16 @@ function acortarSessionId(sessionId: string): string {
   return sessionId.slice(0, 8)
 }
 
+function tituloConversacion(conversacion: {
+  nombreHuesped?: string
+  sessionId: string
+}): string {
+  if (conversacion.nombreHuesped?.trim()) {
+    return conversacion.nombreHuesped.trim()
+  }
+  return `Sesión ${acortarSessionId(conversacion.sessionId)}`
+}
+
 function acortarTexto(texto: string, max = 90): string {
   const limpio = texto.replace(/\s+/g, ' ').trim()
   if (limpio.length <= max) return limpio
@@ -102,7 +112,7 @@ function DetalleConversacion({
           )}
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-host-text">
-              Sesión {acortarSessionId(conversacion.sessionId)}
+              {tituloConversacion(conversacion)}
             </p>
             <p className="mt-1 text-xs text-host-muted">
               {formatearFechaCompleta(conversacion.updatedAt)}
@@ -298,7 +308,7 @@ export default function ChatsPropiedadPage() {
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium text-host-text">
-                            Sesión {acortarSessionId(conversacion.sessionId)}
+                            {tituloConversacion(conversacion)}
                           </p>
                           <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-host-muted">
                             {conversacion.ultimoMensajeRol === 'user'

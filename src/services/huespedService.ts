@@ -1,5 +1,6 @@
 import type {
   MensajeHuespedChat,
+  PerfilHuesped,
   PropiedadGuestInfo,
 } from '../pages/huesped/types/guestChat'
 import type { ConversacionHuespedResumen } from '../pages/propietario/types/conversacionesHuesped'
@@ -20,16 +21,11 @@ function formatearDireccion(
 export async function obtenerPropiedadGuest(
   propiedadId: string,
 ): Promise<PropiedadGuestInfo> {
-  console.log('[GuestChat] obtenerPropiedadGuest — propiedad_id:', propiedadId)
-
   const { data, error } = await supabase
     .from('propiedades')
     .select(COLUMNAS_PUBLICAS)
     .eq('id', propiedadId)
     .maybeSingle()
-
-  console.log('[GuestChat] Supabase propiedades — data:', data)
-  console.log('[GuestChat] Supabase propiedades — error:', error)
 
   if (error) {
     throw new Error(
@@ -53,6 +49,70 @@ export async function obtenerPropiedadGuest(
     ),
     iaIdentidad: data.ia_identidad ?? 'Conserje',
   }
+}
+
+export async function cargarPerfilHuesped(
+  propiedadId: string,
+  sessionId: string,
+): Promise<PerfilHuesped | null> {
+  const { data, error } = await supabase
+    .from('conversaciones_huesped')
+    .select('nombre_huesped, idioma, perfil_completado')
+    .eq('propiedad_id', propiedadId)
+    .eq('session_id', sessionId)
+    .maybeSingle()
+
+  if (error) throw error
+  if (!data) return null
+
+  return {
+    nombreHuesped: data.nombre_huesped?.trim() ?? '',
+    idioma: data.idioma?.trim() || 'es',
+    perfilCompletado: data.perfil_completado === true,
+  }
+}
+
+export async function guardarPerfilHuesped(
+  propiedadId: string,
+  sessionId: string,
+  perfil: { nombreHuesped: string; idioma: string },
+): Promise<void> {
+  const nombre = perfil.nombreHuesped.trim()
+  const idioma = perfil.idioma.trim() || 'es'
+
+  const { data: existente, error: selectError } = await supabase
+    .from('conversaciones_huesped')
+    .select('id')
+    .eq('propiedad_id', propiedadId)
+    .eq('session_id', sessionId)
+    .maybeSingle()
+
+  if (selectError) throw selectError
+
+  const payload = {
+    nombre_huesped: nombre,
+    idioma,
+    perfil_completado: true,
+  }
+
+  if (existente?.id) {
+    const { error } = await supabase
+      .from('conversaciones_huesped')
+      .update(payload)
+      .eq('id', existente.id)
+
+    if (error) throw error
+    return
+  }
+
+  const { error } = await supabase.from('conversaciones_huesped').insert({
+    propiedad_id: propiedadId,
+    session_id: sessionId,
+    historial_mensajes: [],
+    ...payload,
+  })
+
+  if (error) throw error
 }
 
 function parseHistorial(raw: unknown): MensajeHuespedChat[] {
@@ -80,18 +140,12 @@ export async function cargarHistorialHuesped(
   propiedadId: string,
   sessionId: string,
 ): Promise<MensajeHuespedChat[]> {
-  console.log('[GuestChat] cargarHistorial — propiedad_id:', propiedadId)
-  console.log('[GuestChat] cargarHistorial — session_id:', sessionId)
-
   const { data, error } = await supabase
     .from('conversaciones_huesped')
     .select('historial_mensajes')
     .eq('propiedad_id', propiedadId)
     .eq('session_id', sessionId)
     .maybeSingle()
-
-  console.log('[GuestChat] Supabase conversaciones_huesped — data:', data)
-  console.log('[GuestChat] Supabase conversaciones_huesped — error:', error)
 
   if (error) throw error
   if (!data?.historial_mensajes) return []
@@ -136,6 +190,8 @@ function construirResumenConversacion(row: {
   id: string
   session_id: string
   historial_mensajes: unknown
+  nombre_huesped: string | null
+  idioma: string | null
   created_at: string
   updated_at: string
 }): ConversacionHuespedResumen {
@@ -145,6 +201,8 @@ function construirResumenConversacion(row: {
   return {
     id: row.id,
     sessionId: row.session_id,
+    nombreHuesped: row.nombre_huesped?.trim() || undefined,
+    idioma: row.idioma?.trim() || undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     totalMensajes: mensajes.length,
@@ -160,8 +218,11 @@ export async function listarConversacionesPropiedad(
 ): Promise<ConversacionHuespedResumen[]> {
   const { data, error } = await supabase
     .from('conversaciones_huesped')
-    .select('id, session_id, historial_mensajes, created_at, updated_at')
+    .select(
+      'id, session_id, historial_mensajes, nombre_huesped, idioma, created_at, updated_at',
+    )
     .eq('propiedad_id', propiedadId)
+    .eq('perfil_completado', true)
     .order('updated_at', { ascending: false })
 
   if (error) throw error

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import PropietarioAppLayout from './components/layout/PropietarioAppLayout'
 import RootRedirect from './components/SupabaseAuthRedirect'
 import GuestChatPage from './pages/huesped/GuestChatPage'
+import GuestEntryPage from './pages/huesped/GuestEntryPage'
 import WelcomePage from './pages/huesped/WelcomePage'
 import AuthCallbackPage from './pages/propietario/AuthCallbackPage'
 import AuthPage from './pages/propietario/AuthPage'
@@ -40,7 +41,8 @@ function App() {
           path="/crear-propiedad"
           element={<Navigate to="/configurar-vivienda" replace />}
         />
-        <Route path="/guest/:propiedadId" element={<GuestChatPage />} />
+        <Route path="/guest/:propiedadId" element={<GuestEntryPage />} />
+        <Route path="/guest/:propiedadId/chat" element={<GuestChatPage />} />
         <Route path="/welcome" element={<WelcomePage />} />
       </Routes>
     </BrowserRouter>
