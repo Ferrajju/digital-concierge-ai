@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import ChatMarkdown from '../../components/ChatMarkdown'
+import Button from '../../components/ui/Button'
+import Card from '../../components/ui/Card'
+import HostFeedback from '../../components/ui/HostFeedback'
+import HostPageShell from '../../components/ui/HostPageShell'
+import { HostLoading } from '../../components/ui/HostShell'
+import { inputClassName } from '../../components/ui/inputClassName'
 import { useHostScreen } from '../../hooks/useHostScreen'
 import { obtenerPropiedadGuest } from '../../services/huespedService'
 import { enviarMensajeFlujo4 } from '../../services/n8nService'
@@ -11,7 +17,6 @@ import {
   guardarHistorialPrueba,
 } from '../../services/pruebaAgenteService'
 import {
-  limpiarSessionIdPrueba,
   obtenerSessionIdPrueba,
   reiniciarSessionIdPrueba,
 } from '../../utils/pruebaSession'
@@ -59,7 +64,6 @@ export default function ProbarAgentePage() {
   const [cargando, setCargando] = useState(true)
   const [escribiendo, setEscribiendo] = useState(false)
   const [error, setError] = useState('')
-  const [tecladoAbierto, setTecladoAbierto] = useState(false)
 
   const chatRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -100,37 +104,6 @@ export default function ProbarAgentePage() {
       console.warn('[ProbarAgente] No se pudo borrar conversación:', err)
     }
   }, [propiedadId])
-
-  useEffect(() => {
-    document.body.classList.add('guest-chat-active')
-    return () => {
-      document.body.classList.remove('guest-chat-active')
-    }
-  }, [])
-
-  useEffect(() => {
-    const viewport = window.visualViewport
-    if (!viewport) return
-
-    const actualizarTeclado = () => {
-      const abierto = viewport.height < window.innerHeight * 0.85
-      setTecladoAbierto(abierto)
-      document.documentElement.style.setProperty(
-        '--guest-keyboard-offset',
-        `${Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)}px`,
-      )
-    }
-
-    viewport.addEventListener('resize', actualizarTeclado)
-    viewport.addEventListener('scroll', actualizarTeclado)
-    actualizarTeclado()
-
-    return () => {
-      viewport.removeEventListener('resize', actualizarTeclado)
-      viewport.removeEventListener('scroll', actualizarTeclado)
-      document.documentElement.style.removeProperty('--guest-keyboard-offset')
-    }
-  }, [])
 
   useEffect(() => {
     if (!propiedadId) {
@@ -271,12 +244,6 @@ export default function ProbarAgentePage() {
     }
   }
 
-  const salirAlHub = async () => {
-    await limpiarSesionActual()
-    if (propiedadId) limpiarSessionIdPrueba(propiedadId)
-    navigate(`/propiedad/${propiedadId}/gestionar`)
-  }
-
   const nuevaPrueba = async () => {
     if (!propiedadId || !propiedad) return
 
@@ -289,6 +256,7 @@ export default function ProbarAgentePage() {
     const sid = reiniciarSessionIdPrueba(propiedadId)
     setSessionId(sid)
     setMensajes([crearMensajeBienvenida(propiedad.iaIdentidad)])
+    requestAnimationFrame(ajustarAlturaTextarea)
   }
 
   const sendMessage = (e: React.FormEvent) => {
@@ -306,238 +274,253 @@ export default function ProbarAgentePage() {
   const mostrarSugerencias =
     !escribiendo && mensajes.length <= 2 && !input.trim()
 
+  const nombreAgente = propiedad?.iaIdentidad ?? 'Conserje'
+  const hubPath = `/propiedad/${propiedadId}/gestionar`
+
+  if (!propiedadId) {
+    return null
+  }
+
   if (cargando) {
     return (
-      <div className="guest-chat-shell flex items-center justify-center px-4">
-        <div className="text-center">
-          <div className="mx-auto mb-4 h-11 w-11 animate-spin rounded-full border-[3px] border-violet-500/20 border-t-violet-400" />
-          <p className="text-sm text-slate-400">Preparando simulacro...</p>
-        </div>
-      </div>
+      <HostPageShell
+        backTo={hubPath}
+        backLabel="Volver al hub"
+        eyebrow="Simulacro del conserje"
+        title="Preparando simulacro..."
+      >
+        <HostLoading label="Cargando chat de prueba..." />
+      </HostPageShell>
     )
   }
 
   if (error && !propiedad) {
     return (
-      <div className="guest-chat-shell flex items-center justify-center px-6 text-center">
-        <div>
-          <p className="text-lg font-semibold text-white">Simulacro no disponible</p>
-          <p className="mt-2 text-sm leading-relaxed text-slate-400">{error}</p>
-          <button
-            type="button"
-            onClick={() => navigate(`/propiedad/${propiedadId}/gestionar`)}
-            className="mt-6 rounded-full bg-violet-600 px-5 py-2.5 text-sm font-medium text-white"
-          >
+      <HostPageShell
+        backTo={hubPath}
+        backLabel="Volver al hub"
+        eyebrow="Simulacro del conserje"
+        title="Simulacro no disponible"
+      >
+        <HostFeedback>{error}</HostFeedback>
+        <div className="mt-6">
+          <Button to={hubPath} variant="secondary">
             Volver al hub
-          </button>
+          </Button>
         </div>
-      </div>
+      </HostPageShell>
     )
   }
 
-  const nombreAgente = propiedad?.iaIdentidad ?? 'Conserje'
-
   return (
-    <div className="guest-chat-shell">
-      <div className="shrink-0 border-b border-violet-500/20 bg-violet-950/90 px-3 py-2 text-center backdrop-blur-md">
-        <p className="text-xs font-semibold text-violet-200">
-          🧪 Simulacro — prueba del propietario
-        </p>
-        <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
-          <button
-            type="button"
-            onClick={() => void nuevaPrueba()}
-            className="rounded-full border border-violet-400/30 bg-violet-500/15 px-3 py-1 text-[11px] font-medium text-violet-100"
-          >
-            Nueva conversación
-          </button>
-          <button
-            type="button"
-            onClick={() => void salirAlHub()}
-            className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium text-slate-300"
-          >
-            Salir al hub
-          </button>
-        </div>
-      </div>
+    <HostPageShell
+      backTo={hubPath}
+      backLabel="Volver al hub"
+      eyebrow="Simulacro del conserje"
+      title={propiedad?.nombreApartamento ?? 'Probar conserje'}
+      description={`Prueba a ${nombreAgente} como un huésped real. Las alertas Telegram llegan marcadas como simulacro y esta conversación no aparece en tus chats.`}
+      headerExtra={
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() => void nuevaPrueba()}
+          disabled={escribiendo}
+        >
+          Nueva conversación
+        </Button>
+      }
+    >
+      <HostFeedback variant="warning" className="mb-6">
+        <strong>Modo simulacro.</strong> Lo que escribas aquí no contamina el
+        listado de huéspedes. Si disparas una incidencia, la alerta en Telegram
+        irá precedida de «SIMULACRO — Prueba del propietario».
+      </HostFeedback>
 
-      <header className="guest-chat-header shrink-0 border-b border-white/5 bg-[#111b21]/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-lg items-center gap-3 px-4 py-3">
-          <div
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-600 text-lg font-bold text-white shadow-lg shadow-violet-500/20"
-            aria-hidden
-          >
-            {nombreAgente.charAt(0).toUpperCase()}
-          </div>
-          <div className="min-w-0 flex-1">
-            <h1 className="truncate text-[17px] font-semibold leading-tight text-white">
-              {propiedad?.nombreApartamento}
-            </h1>
-            <p className="truncate text-xs text-violet-300/90">
-              Vista huésped · {propiedad?.direccionCompleta || 'Simulacro'}
-            </p>
-            <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-slate-500">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-violet-400" />
-              {nombreAgente} · en línea
-            </p>
-          </div>
-        </div>
-      </header>
+      {error && propiedad && (
+        <HostFeedback className="mb-6">{error}</HostFeedback>
+      )}
 
-      <main
-        ref={chatRef}
-        className="guest-chat-messages mx-auto w-full max-w-lg flex-1 overflow-y-auto overscroll-contain px-3 py-4"
-        aria-live="polite"
-        aria-relevant="additions"
-      >
-        <div className="flex flex-col gap-3 pb-2">
-          {error && propiedad && (
-            <div
-              role="alert"
-              className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm leading-relaxed text-rose-200"
-            >
-              {error}
-            </div>
-          )}
-
-          {mensajes.map((mensaje, index) => {
-            const esUsuario = mensaje.rol === 'user'
-            const hora = formatearHora(mensaje.timestamp)
-
-            return (
+      <Card padding="none" className="overflow-hidden shadow-card-hover">
+        <div className="grid min-h-[min(72vh,820px)] lg:grid-cols-[minmax(260px,300px)_minmax(0,1fr)]">
+          <aside className="border-b border-host-border bg-teal-50/50 px-4 py-5 sm:px-5 lg:border-b-0 lg:border-r">
+            <div className="flex items-center gap-3">
               <div
-                key={`${mensaje.timestamp}-${index}`}
-                className={`flex ${esUsuario ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[92%] sm:max-w-[85%] ${
-                    esUsuario ? 'items-end' : 'items-start'
-                  } flex flex-col gap-1`}
-                >
-                  <div
-                    className={`rounded-2xl px-4 py-3 text-[16px] leading-relaxed shadow-sm ${
-                      esUsuario
-                        ? 'rounded-br-md bg-[#005c4b] text-white'
-                        : 'rounded-bl-md bg-[#202c33] text-slate-100'
-                    }`}
-                  >
-                    {!esUsuario && (
-                      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-violet-400/80">
-                        {nombreAgente}
-                      </p>
-                    )}
-                    {esUsuario ? (
-                      <p className="whitespace-pre-wrap break-words">
-                        {mensaje.contenido}
-                      </p>
-                    ) : (
-                      <ChatMarkdown contenido={mensaje.contenido} />
-                    )}
-                  </div>
-                  {hora && (
-                    <span
-                      className={`px-1 text-[10px] text-slate-500 ${
-                        esUsuario ? 'text-right' : 'text-left'
-                      }`}
-                    >
-                      {hora}
-                    </span>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-
-          {escribiendo && (
-            <div className="flex justify-start">
-              <div className="rounded-2xl rounded-bl-md bg-[#202c33] px-4 py-3.5">
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-violet-400/80 [animation-delay:0ms]" />
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-violet-400/80 [animation-delay:150ms]" />
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-violet-400/80 [animation-delay:300ms]" />
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </main>
-
-      <footer
-        className="guest-chat-footer shrink-0 border-t border-white/5 bg-[#111b21]/98 backdrop-blur-md"
-        style={{
-          paddingBottom: tecladoAbierto
-            ? 'max(0.5rem, env(safe-area-inset-bottom))'
-            : undefined,
-        }}
-      >
-        {mostrarSugerencias && (
-          <div className="mx-auto max-w-lg px-3 pt-3">
-            <p className="mb-2 px-1 text-[11px] font-medium uppercase tracking-wider text-slate-500">
-              Prueba rápida
-            </p>
-            <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {PREGUNTAS_RAPIDAS.map((pregunta) => (
-                <button
-                  key={pregunta}
-                  type="button"
-                  onClick={() => void enviarTexto(pregunta)}
-                  className="shrink-0 rounded-full border border-violet-500/25 bg-violet-500/10 px-4 py-2.5 text-sm font-medium text-violet-100 transition-colors active:scale-[0.98] active:bg-violet-500/20"
-                >
-                  {pregunta}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <form onSubmit={sendMessage} className="mx-auto max-w-lg px-3 py-3">
-          <div className="flex items-end gap-2">
-            <label htmlFor="preview-chat-input" className="sr-only">
-              Escribe como huésped de prueba
-            </label>
-            <textarea
-              id="preview-chat-input"
-              ref={inputRef}
-              rows={1}
-              value={input}
-              onChange={(e) => {
-                setInput(e.target.value)
-                ajustarAlturaTextarea()
-              }}
-              onKeyDown={handleInputKeyDown}
-              onFocus={() => {
-                setTimeout(() => scrollAlFinal(true), 150)
-              }}
-              placeholder="Escribe como un huésped..."
-              disabled={escribiendo}
-              enterKeyHint="send"
-              inputMode="text"
-              autoComplete="off"
-              autoCorrect="on"
-              spellCheck
-              className="max-h-32 min-h-[48px] flex-1 resize-none rounded-3xl border border-white/10 bg-[#202c33] px-4 py-3 text-[16px] leading-snug text-white placeholder:text-slate-500 focus:border-violet-500/50 focus:outline-none focus:ring-2 focus:ring-violet-500/20 disabled:opacity-50"
-            />
-            <button
-              type="submit"
-              disabled={!input.trim() || escribiendo}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-violet-600 text-white shadow-lg shadow-violet-600/30 transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-              aria-label="Enviar mensaje"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="h-5 w-5 translate-x-0.5"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-host-primary text-base font-bold text-white shadow-sm"
                 aria-hidden
               >
-                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-              </svg>
-            </button>
+                {nombreAgente.charAt(0).toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-host-text">
+                  {nombreAgente}
+                </p>
+                <p className="mt-0.5 text-xs text-host-muted">
+                  Vista huésped · en línea
+                </p>
+              </div>
+            </div>
+
+            {propiedad?.direccionCompleta && (
+              <p className="mt-4 text-xs leading-relaxed text-host-muted">
+                {propiedad.direccionCompleta}
+              </p>
+            )}
+
+            <div className="mt-5 rounded-xl border border-teal-200 bg-white/80 px-3 py-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-host-primary">
+                Qué ocurre en el simulacro
+              </p>
+              <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-host-muted">
+                <li>· Respuestas reales del Flujo 4</li>
+                <li>· Alertas Telegram con etiqueta de prueba</li>
+                <li>· Conversación temporal al salir</li>
+              </ul>
+            </div>
+
+            {mostrarSugerencias && (
+              <div className="mt-5">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-host-muted">
+                  Prueba rápida
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {PREGUNTAS_RAPIDAS.map((pregunta) => (
+                    <button
+                      key={pregunta}
+                      type="button"
+                      onClick={() => void enviarTexto(pregunta)}
+                      className="rounded-full border border-teal-200 bg-white px-3 py-2 text-left text-xs font-medium text-host-text transition-colors hover:border-teal-300 hover:bg-teal-50"
+                    >
+                      {pregunta}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </aside>
+
+          <div className="flex min-h-[55vh] flex-col lg:min-h-0">
+            <div className="border-b border-host-border bg-host-surface px-4 py-3 sm:px-6">
+              <p className="text-xs font-semibold uppercase tracking-wider text-host-muted">
+                Conversación de prueba
+              </p>
+              <p className="mt-1 text-sm text-host-text">
+                Escribe como un huésped para comprobar respuestas y alertas.
+              </p>
+            </div>
+
+            <div
+              ref={chatRef}
+              className="flex-1 overflow-y-auto bg-stone-50/50 px-4 py-4 sm:px-6"
+              aria-live="polite"
+              aria-relevant="additions"
+            >
+              <div className="mx-auto flex max-w-3xl flex-col gap-3 pb-2">
+                {mensajes.map((mensaje, index) => {
+                  const esUsuario = mensaje.rol === 'user'
+                  const hora = formatearHora(mensaje.timestamp)
+
+                  return (
+                    <div
+                      key={`${mensaje.timestamp}-${index}`}
+                      className={`flex ${esUsuario ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div className="max-w-[92%] sm:max-w-[85%] lg:max-w-[75%]">
+                        <div
+                          className={`rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${
+                            esUsuario
+                              ? 'rounded-br-md bg-host-primary text-white'
+                              : 'rounded-bl-md border border-host-border bg-host-surface text-host-text'
+                          }`}
+                        >
+                          {!esUsuario && (
+                            <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-host-primary">
+                              {nombreAgente}
+                            </p>
+                          )}
+                          {esUsuario ? (
+                            <p className="whitespace-pre-wrap break-words">
+                              {mensaje.contenido}
+                            </p>
+                          ) : (
+                            <ChatMarkdown
+                              contenido={mensaje.contenido}
+                              variant="light"
+                            />
+                          )}
+                        </div>
+                        {hora && (
+                          <p
+                            className={`mt-1 px-1 text-[10px] text-stone-400 ${
+                              esUsuario ? 'text-right' : 'text-left'
+                            }`}
+                          >
+                            {esUsuario ? 'Tú (simulando huésped)' : nombreAgente}{' '}
+                            · {hora}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+
+                {escribiendo && (
+                  <div className="flex justify-start">
+                    <div className="rounded-2xl border border-host-border bg-host-surface px-4 py-3 shadow-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 animate-bounce rounded-full bg-host-primary/70 [animation-delay:0ms]" />
+                        <span className="h-2 w-2 animate-bounce rounded-full bg-host-primary/70 [animation-delay:150ms]" />
+                        <span className="h-2 w-2 animate-bounce rounded-full bg-host-primary/70 [animation-delay:300ms]" />
+                        <span className="text-xs text-host-muted">
+                          {nombreAgente} está escribiendo...
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <form
+              onSubmit={sendMessage}
+              className="border-t border-host-border bg-host-surface p-4 sm:p-5"
+            >
+              <div className="mx-auto flex max-w-3xl flex-col gap-3 sm:flex-row sm:items-end">
+                <label htmlFor="preview-chat-input" className="sr-only">
+                  Escribe como huésped de prueba
+                </label>
+                <textarea
+                  id="preview-chat-input"
+                  ref={inputRef}
+                  rows={1}
+                  value={input}
+                  onChange={(e) => {
+                    setInput(e.target.value)
+                    ajustarAlturaTextarea()
+                  }}
+                  onKeyDown={handleInputKeyDown}
+                  onFocus={() => {
+                    setTimeout(() => scrollAlFinal(true), 150)
+                  }}
+                  placeholder="Escribe como un huésped..."
+                  disabled={escribiendo}
+                  className={`min-h-[48px] max-h-32 flex-1 resize-none ${inputClassName}`}
+                />
+                <Button
+                  type="submit"
+                  disabled={!input.trim() || escribiendo}
+                  className="shrink-0 sm:min-w-[7.5rem]"
+                >
+                  Enviar
+                </Button>
+              </div>
+              <p className="mx-auto mt-2 max-w-3xl text-center text-[11px] text-host-muted sm:text-left">
+                Enter para enviar · Shift+Enter para nueva línea
+              </p>
+            </form>
           </div>
-          <p className="mt-2 px-1 text-center text-[10px] text-slate-600">
-            Las alertas Telegram llegan marcadas como simulacro
-          </p>
-        </form>
-      </footer>
-    </div>
+        </div>
+      </Card>
+    </HostPageShell>
   )
 }
