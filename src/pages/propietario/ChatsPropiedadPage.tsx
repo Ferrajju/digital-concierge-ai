@@ -272,22 +272,22 @@ function DetalleConversacion({
   }
 
   return (
-    <div className="flex h-full flex-col bg-stone-50/50">
-      <div className="border-b border-host-border bg-host-surface px-4 py-4 sm:px-6">
-        <div className="flex items-start gap-3">
+    <div className="flex h-full min-h-0 flex-col bg-stone-50/50">
+      <div className="shrink-0 border-b border-host-border bg-host-surface px-3 py-3 sm:px-5 sm:py-4">
+        <div className="flex items-start gap-2 sm:gap-3">
           {onVolver && (
             <button
               type="button"
               onClick={() => void salirModoAsistencia()}
               disabled={saliendo}
-              className="mt-0.5 rounded-lg border border-host-border bg-host-surface px-3 py-1.5 text-sm font-medium text-host-muted lg:hidden disabled:opacity-50"
+              className="mt-0.5 shrink-0 rounded-lg border border-host-border bg-host-surface px-2.5 py-1.5 text-xs font-medium text-host-muted sm:px-3 sm:text-sm lg:hidden disabled:opacity-50"
             >
               ← Salir
             </button>
           )}
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="text-sm font-semibold text-host-text">
+              <p className="truncate text-sm font-semibold text-host-text sm:text-base">
                 {tituloConversacion(conversacion)}
               </p>
               {modoAsistencia && (
@@ -296,12 +296,16 @@ function DetalleConversacion({
                 </span>
               )}
             </div>
-            <p className="mt-1 text-xs text-host-muted">
-              {formatearFechaCompleta(conversacion.updatedAt)}
-            </p>
-            <p className="mt-2 text-xs text-host-muted">
-              {conversacion.totalMensajes} mensajes ·{' '}
-              {conversacion.mensajesUsuario} del huésped
+            <p className="mt-0.5 text-[11px] text-host-muted sm:mt-1 sm:text-xs">
+              <span className="lg:hidden">
+                {formatearFechaRelativa(conversacion.updatedAt)}
+              </span>
+              <span className="hidden lg:inline">
+                {formatearFechaCompleta(conversacion.updatedAt)}
+              </span>
+              {' · '}
+              {conversacion.totalMensajes} msg ·{' '}
+              {conversacion.mensajesUsuario} huésped
             </p>
           </div>
           <button
@@ -315,17 +319,16 @@ function DetalleConversacion({
         </div>
 
         {modoAsistencia && (
-          <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-900">
-            Estás atendiendo esta conversación. El conserje automático está{' '}
-            <strong>pausado</strong> hasta que pulses «Reactivar conserje» o
-            salgas del chat.
+          <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-900 sm:mt-3 sm:py-2.5 sm:text-xs">
+            El conserje automático está <strong>pausado</strong> mientras
+            atiendes esta conversación.
           </div>
         )}
       </div>
 
       <div
         ref={chatRef}
-        className="flex-1 overflow-y-auto px-4 py-4 sm:px-6"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3 sm:px-5 sm:py-4"
       >
         <div className="mx-auto flex max-w-2xl flex-col gap-3">
           {mensajes.length === 0 ? (
@@ -387,7 +390,7 @@ function DetalleConversacion({
         </div>
       </div>
 
-      <div className="border-t border-host-border bg-host-surface px-4 py-3 sm:px-6">
+      <div className="shrink-0 border-t border-host-border bg-host-surface px-3 py-2.5 sm:px-5 sm:py-3">
         {error && (
           <p
             role="alert"
@@ -510,6 +513,7 @@ export default function ChatsPropiedadPage() {
 
   return (
     <HostPageShell
+      fillViewport
       backTo="/dashboard"
       eyebrow="Conversaciones de huéspedes"
       title={nombrePropiedad || 'Cargando...'}
@@ -534,19 +538,24 @@ export default function ChatsPropiedadPage() {
       )}
 
       {!cargando && !error && conversaciones.length > 0 && (
-        <Card padding="none" className="overflow-hidden shadow-card-hover">
-          <div className="grid min-h-[70vh] lg:grid-cols-[320px_minmax(0,1fr)]">
+        <Card
+          padding="none"
+          className="flex min-h-0 flex-1 flex-col overflow-hidden shadow-card-hover"
+        >
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:grid lg:grid-cols-[minmax(240px,280px)_minmax(0,1fr)]">
             <aside
-              className={`border-b border-host-border bg-host-surface lg:border-b-0 lg:border-r ${
-                conversacionSeleccionada ? 'hidden lg:block' : 'block'
+              className={`flex min-h-0 flex-col overflow-hidden border-host-border bg-host-surface lg:border-r ${
+                conversacionSeleccionada
+                  ? 'hidden lg:flex'
+                  : 'flex min-h-0 flex-1 border-b lg:border-b-0'
               }`}
             >
-              <div className="border-b border-host-border px-4 py-3">
+              <div className="shrink-0 border-b border-host-border px-3 py-2.5 sm:px-4 sm:py-3">
                 <p className="text-xs font-semibold uppercase tracking-wider text-host-muted">
                   Sesiones recientes
                 </p>
               </div>
-              <div className="max-h-[70vh] overflow-y-auto">
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
                 {conversaciones.map((conversacion) => {
                   const activa = conversacion.id === seleccionadaId
                   return (
@@ -554,7 +563,7 @@ export default function ChatsPropiedadPage() {
                       key={conversacion.id}
                       type="button"
                       onClick={() => setSeleccionadaId(conversacion.id)}
-                      className={`w-full border-b border-host-border px-4 py-4 text-left transition-colors ${
+                      className={`w-full border-b border-host-border px-3 py-3 text-left transition-colors sm:px-4 sm:py-3.5 ${
                         activa
                           ? 'bg-teal-50'
                           : 'hover:bg-stone-50'
@@ -596,8 +605,10 @@ export default function ChatsPropiedadPage() {
             </aside>
 
             <section
-              className={`min-h-[60vh] ${
-                conversacionSeleccionada ? 'block' : 'hidden lg:block'
+              className={`min-h-0 flex-col overflow-hidden ${
+                conversacionSeleccionada
+                  ? 'flex min-h-0 flex-1'
+                  : 'hidden lg:flex lg:min-h-0'
               }`}
             >
               {conversacionSeleccionada && propiedadId ? (
@@ -609,7 +620,7 @@ export default function ChatsPropiedadPage() {
                   onActualizar={actualizarConversacion}
                 />
               ) : (
-                <div className="flex h-full min-h-[60vh] items-center justify-center bg-stone-50/50 px-6 text-center">
+                <div className="flex h-full min-h-0 items-center justify-center bg-stone-50/50 px-6 text-center">
                   <p className="text-sm text-host-muted">
                     Selecciona una sesión para leer la conversación.
                   </p>
