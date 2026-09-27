@@ -141,8 +141,9 @@ export default function GestionarPropiedadPage() {
       {cargando ? (
         <HostLoading label="Cargando propiedad..." />
       ) : vista === 'hub' ? (
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="flex flex-col gap-8 sm:gap-10">
           <HubTile
+            layout="banner"
             accent="teal"
             icon={<IconChat />}
             title="Probar conserje"
@@ -150,38 +151,53 @@ export default function GestionarPropiedadPage() {
             meta="Simulacro temporal"
             onClick={() => navigate(`/propiedad/${propiedadId}/probar-agente`)}
           />
-          <HubTile
-            accent="teal"
-            icon={<IconBook />}
-            title="Base de conocimiento"
-            description="Bloques del manual indexados (Wi-Fi, acceso, normas...). Al guardar se actualizan los embeddings."
-            meta={`${totalBloques} bloques indexados`}
-            onClick={() => setVista('conocimiento')}
-          />
-          <HubTile
-            accent="emerald"
-            icon={<IconMap />}
-            title="Guía local"
-            description="Supermercados, farmacias y restaurantes cercanos. Añade, edita o elimina recomendaciones."
-            meta={`${totalTarjetas} tarjetas indexadas`}
-            onClick={() => setVista('guia')}
-          />
-          <HubTile
-            accent="amber"
-            icon={<IconBell />}
-            title="Alertas Telegram"
-            description="Elige qué incidencias críticas quieres recibir en tu móvil para este alojamiento."
-            meta={alertasActivas ? 'Alertas activas' : 'Sin alertas activas'}
-            onClick={() => setVista('alertas')}
-          />
-          <HubTile
-            accent="violet"
-            icon={<IconSettings />}
-            title="Agente y alojamiento"
-            description="Nombre y personalidad del agente, datos del apartamento y ubicación."
-            meta="Configuración general"
-            onClick={() => setVista('config')}
-          />
+
+          <section aria-labelledby="ajustes-alojamiento">
+            <div className="mb-4 flex items-center gap-4 sm:mb-5">
+              <h2
+                id="ajustes-alojamiento"
+                className="shrink-0 font-display text-sm font-semibold tracking-tight text-host-text"
+              >
+                Ajustes del alojamiento
+              </h2>
+              <div className="h-px flex-1 bg-stone-200" aria-hidden />
+            </div>
+
+            <div className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 sm:gap-5">
+              <HubTile
+                accent="teal"
+                icon={<IconBook />}
+                title="Base de conocimiento"
+                description="Bloques del manual indexados (Wi-Fi, acceso, normas...). Al guardar se actualizan los embeddings."
+                meta={`${totalBloques} bloques indexados`}
+                onClick={() => setVista('conocimiento')}
+              />
+              <HubTile
+                accent="emerald"
+                icon={<IconMap />}
+                title="Guía local"
+                description="Supermercados, farmacias y restaurantes cercanos. Añade, edita o elimina recomendaciones."
+                meta={`${totalTarjetas} tarjetas indexadas`}
+                onClick={() => setVista('guia')}
+              />
+              <HubTile
+                accent="amber"
+                icon={<IconBell />}
+                title="Alertas Telegram"
+                description="Elige qué incidencias críticas quieres recibir en tu móvil para este alojamiento."
+                meta={alertasActivas ? 'Alertas activas' : 'Sin alertas activas'}
+                onClick={() => setVista('alertas')}
+              />
+              <HubTile
+                accent="violet"
+                icon={<IconSettings />}
+                title="Agente y alojamiento"
+                description="Nombre y personalidad del agente, datos del apartamento y ubicación."
+                meta="Configuración general"
+                onClick={() => setVista('config')}
+              />
+            </div>
+          </section>
         </div>
       ) : vista === 'conocimiento' ? (
         <BaseConocimientoEditor

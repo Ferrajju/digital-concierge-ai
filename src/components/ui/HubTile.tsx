@@ -8,6 +8,8 @@ type HubTileProps = {
   meta: string
   onClick: () => void
   accent?: 'teal' | 'emerald' | 'violet' | 'amber'
+  /** `banner` destaca una acción principal a ancho completo. `card` es una celda del bloque simétrico. */
+  layout?: 'card' | 'banner'
 }
 
 const accentClasses = {
@@ -33,6 +35,36 @@ const accentClasses = {
   },
 }
 
+const surfaceClass =
+  'group w-full rounded-2xl border bg-host-surface text-left shadow-card ring-1 ring-stone-900/[0.03] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-host-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-host-bg'
+
+function IconBadge({
+  icon,
+  className,
+}: {
+  icon: ReactNode
+  className: string
+}) {
+  return (
+    <div
+      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border ${className}`}
+    >
+      {icon}
+    </div>
+  )
+}
+
+function MetaChip({ meta, className }: { meta: string; className: string }) {
+  return (
+    <span
+      className={`inline-flex w-fit items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-bold ${className}`}
+    >
+      {meta}
+      <IconArrowRight className="h-3.5 w-3.5 shrink-0 transition-transform group-hover:translate-x-0.5" />
+    </span>
+  )
+}
+
 export default function HubTile({
   icon,
   title,
@@ -40,36 +72,51 @@ export default function HubTile({
   meta,
   onClick,
   accent = 'teal',
+  layout = 'card',
 }: HubTileProps) {
   const styles = accentClasses[accent]
+
+  if (layout === 'banner') {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={`${surfaceClass} grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-4 gap-y-4 border-teal-200 p-5 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center sm:gap-x-6 sm:p-6 ${styles.hover}`}
+      >
+        <IconBadge icon={icon} className={styles.icon} />
+        <div className="min-w-0">
+          <h2 className="font-display text-lg font-bold text-host-text">
+            {title}
+          </h2>
+          <p className="mt-1 text-sm leading-relaxed text-host-muted">
+            {description}
+          </p>
+        </div>
+        <MetaChip
+          meta={meta}
+          className={`${styles.meta} col-start-2 sm:col-start-auto sm:self-center`}
+        />
+      </button>
+    )
+  }
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`group flex h-full flex-col overflow-hidden rounded-2xl border border-stone-200 bg-host-surface text-left shadow-card ring-1 ring-stone-900/[0.03] transition-all ${styles.hover}`}
+      className={`${surfaceClass} flex h-full items-start gap-4 border-stone-200 p-5 sm:flex-col sm:p-6 ${styles.hover}`}
     >
-      <div className="border-b border-stone-200 px-5 py-5">
-        <div
-          className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl border ${styles.icon}`}
-        >
-          {icon}
-        </div>
-        <h2 className="font-display text-lg font-bold text-host-text">
+      <IconBadge icon={icon} className={styles.icon} />
+      <div className="flex min-w-0 flex-1 flex-col self-stretch">
+        <h3 className="font-display text-lg font-bold leading-snug text-host-text">
           {title}
-        </h2>
-        <p className="mt-2 text-sm leading-relaxed text-host-muted">
+        </h3>
+        <p className="mt-1.5 flex-1 text-sm leading-relaxed text-host-muted sm:mt-2">
           {description}
         </p>
-      </div>
-
-      <div className="mt-auto border-t border-stone-200 px-5 py-3">
-        <span
-          className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-bold ${styles.meta}`}
-        >
-          {meta}
-          <IconArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-        </span>
+        <div className="mt-4 sm:mt-5">
+          <MetaChip meta={meta} className={styles.meta} />
+        </div>
       </div>
     </button>
   )
